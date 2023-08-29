@@ -449,14 +449,19 @@ func addCertToSSH(certName string) error {
 // or if they want to use the newest Avalanche Go Version that is still compatible with Subnet EVM
 // version of their choice
 func getAvalancheGoVersion() (string, error) {
+	latestAvalancheGoVersion := "latest"
 	chosenOption, err := promptAvalancheGoReferenceChoice()
 	if err != nil {
 		return "", err
 	}
-	if chosenOption != "latest" {
+	if chosenOption != latestAvalancheGoVersion {
 		sc, err := app.LoadSidecar(chosenOption)
 		if err != nil {
 			return "", err
+		}
+		if sc.RPCVersion == 0 {
+			// skip rpc check for custom VM, just go with the latest Avalanche Go Version
+			return latestAvalancheGoVersion, nil
 		}
 		customAvagoVersion, err := GetLatestAvagoVersionForRPC(sc.RPCVersion)
 		if err != nil {
