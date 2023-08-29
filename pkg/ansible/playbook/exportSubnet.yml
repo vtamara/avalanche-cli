@@ -5,3 +5,7 @@
       copy:
         src: "{{ originSubnetPath }}"
         dest: "{{ destSubnetPath }}"
+    - name: copy custom VM binary to cloud server
+      copy:
+        src: "{{ originVMBinPath }}"
+        dest: "{{ destVMBinPath }}"
