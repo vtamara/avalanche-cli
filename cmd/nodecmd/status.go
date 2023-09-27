@@ -60,6 +60,23 @@ func statusSubnet(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	avagoVersions := map[string]string{}
+	for _, host := range ansibleHostIDs {
+		if err := app.CreateAnsibleStatusFile(app.GetAvalancheGoJSONFile()); err != nil {
+			return err
+		}
+		if err := ansible.RunAnsiblePlaybookCheckAvalancheGoVersion(app.GetAnsibleDir(), app.GetAvalancheGoJSONFile(), app.GetAnsibleInventoryDirPath(clusterName), host); err != nil {
+			return err
+		}
+		avalancheGoVersion, err := parseAvalancheGoOutput(app.GetAvalancheGoJSONFile())
+		if err != nil {
+			return err
+		}
+		if err := app.RemoveAnsibleStatusDir(); err != nil {
+			return err
+		}
+		avagoVersions[host] = avalancheGoVersion
+	}
 	if subnetName != "" {
 		sc, err := app.LoadSidecar(subnetName)
 		if err != nil {
@@ -86,14 +103,14 @@ func statusSubnet(_ *cobra.Command, args []string) error {
 				notSyncedNodes = append(notSyncedNodes, host)
 			}
 		}
-		printOutput(ansibleHostIDs, notBootstrappedNodes, notSyncedNodes, subnetSyncedNodes, subnetValidatingNodes, clusterName, subnetName)
+		printOutput(ansibleHostIDs, avagoVersions, notBootstrappedNodes, notSyncedNodes, subnetSyncedNodes, subnetValidatingNodes, clusterName, subnetName)
 		return nil
 	}
-	printOutput(ansibleHostIDs, notBootstrappedNodes, nil, nil, nil, clusterName, subnetName)
+	printOutput(ansibleHostIDs, avagoVersions, notBootstrappedNodes, nil, nil, nil, clusterName, subnetName)
 	return nil
 }
 
-func printOutput(hostAliases, notBootstrappedHosts, notSyncedHosts, subnetSyncedHosts, subnetValidatingHosts []string, clusterName, subnetName string) {
+func printOutput(hostAliases []string, avagoVersions map[string]string, notBootstrappedHosts, notSyncedHosts, subnetSyncedHosts, subnetValidatingHosts []string, clusterName, subnetName string) {
 	if subnetName == "" && len(notBootstrappedHosts) == 0 {
 		ux.Logger.PrintToUser("All nodes in cluster %s are bootstrapped to Primary Network!", clusterName)
 	}
@@ -111,7 +128,7 @@ func printOutput(hostAliases, notBootstrappedHosts, notSyncedHosts, subnetSynced
 	ux.Logger.PrintToUser(tit)
 	ux.Logger.PrintToUser(strings.Repeat("=", len(tit)))
 	ux.Logger.PrintToUser("")
-	header := []string{"Node", "Primary Network"}
+	header := []string{"Node", "Avago Version", "Primary Network"}
 	if subnetName != "" {
 		header = append(header, "Subnet " + subnetName)
 	}
@@ -125,6 +142,7 @@ func printOutput(hostAliases, notBootstrappedHosts, notSyncedHosts, subnetSynced
 		}
 		row := []string{
 			host,
+			avagoVersions[host],
 			boostrappedStatus,
 		}
 		if subnetName != "" {
