@@ -6,7 +6,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 SHELL = /usr/bin/env bash -o pipefail
-.SHELLFLAGS = -ec
+#.SHELLFLAGS = -ec
 
 all: build
 
@@ -36,7 +36,7 @@ vet: ## Run go vet against code.
 
 test: fmt vet envtest ## Run tests.
 	go test -v ./... -coverprofile cover.out
-	
+
 lint:
 	golangci-lint run  --path-prefix=.
 	
@@ -47,3 +47,12 @@ build: fmt vet ## Build manager binary.
 run: build ## Run a controller from your host.
 	./bin/avalanche help
 
+localstack:
+	localstack --version || brew install localstack/tap/localstack-cli
+	localstack start -d
+
+localstack-stop:
+	localstack stop
+	
+docker:
+	docker --version || (echo "docker is not installed. Pls follow https://docs.docker.com/get-docker/" && exit 1)
