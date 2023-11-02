@@ -7,6 +7,7 @@ endif
 
 SHELL = /usr/bin/env bash -o pipefail
 #.SHELLFLAGS = -ec
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 all: build
 
@@ -47,7 +48,7 @@ build: fmt vet ## Build manager binary.
 run: build ## Run a controller from your host.
 	./bin/avalanche help
 
-localstack:
+localstack: docker
 	localstack --version || brew install localstack/tap/localstack-cli
 	localstack start -d
 
@@ -56,3 +57,15 @@ localstack-stop:
 	
 docker:
 	docker --version || (echo "docker is not installed. Pls follow https://docs.docker.com/get-docker/" && exit 1)
+
+localaws: localstack build
+	env | grep AWS
+	./bin/avalanche node create artur1
+
+#export all aws vars
+localaws: export AWS_PROFILE=default
+localaws: export AWS_ENDPOINT_URL=http://localhost:4566
+localaws: export AWS_CONFIG_FILE=/tmp/aws_config
+localaws: export AWS_DEFAULT_REGION=us-east-1
+localaws: export AWS_REGION=us-east-1
+localaws: export AWS_DEFAULT_OUTPUT=text
