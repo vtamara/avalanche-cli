@@ -18,6 +18,7 @@ import (
 	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/utils"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
+	"github.com/ava-labs/avalanchego/config"
 	coreth_params "github.com/ava-labs/coreth/params"
 	"github.com/spf13/cobra"
 )
@@ -89,14 +90,6 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	if err := ansible.RunAnsiblePlaybookCopyGenesis(
-		app.GetAnsibleDir(),
-		strings.Join(ansibleHostIDs, ","),
-		app.GetNodesDir(),
-		app.GetAnsibleInventoryDirPath(clusterName),
-	); err != nil {
-		return err
-	}
 	ansibleHosts, err := ansible.GetHostMapfromAnsibleInventory(app.GetAnsibleInventoryDirPath(clusterName))
 	if err != nil {
 		return err
@@ -104,19 +97,32 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 	bootstrapIPs := []string{}
 	bootstrapIDs := []string{}
 	for i, ansibleHostID := range ansibleHostIDs {
-		if err := ansible.RunAnsiblePlaybookSetDevnetFlags(
-			app.GetAnsibleDir(),
-			ansibleHostID,
-			app.GetNodesDir(),
-			fmt.Sprint(networkID),
-			strings.Join(bootstrapIDs, ","),
-			strings.Join(bootstrapIPs, ","),
-			app.GetAnsibleInventoryDirPath(clusterName),
-		); err != nil {
-			return err
-		}
+		cloudHostID := cloudHostIDs[i]
+		confMap := map[string]interface{}{}
+		confMap[config.NetworkNameKey] = networkID
+		confMap[config.PublicIPKey] = ansibleHosts[ansibleHostID].IP
+		confMap[config.BootstrapIDsKey] = strings.Join(bootstrapIDs, ",")
+		confMap[config.BootstrapIPsKey] = strings.Join(bootstrapIPs, ",")
+		confMap[config.GenesisFileKey] = "/home/ubuntu/.avalanchego/configs/genesis.json"
 		bootstrapIDs = append(bootstrapIDs, nodeIDs[i])
 		bootstrapIPs = append(bootstrapIPs, ansibleHosts[ansibleHostID].IP+":9651")
+		confBytes, err := json.MarshalIndent(confMap, "", " ")
+		if err != nil {
+			return err
+		}
+		outFile := filepath.Join(app.GetNodeInstanceDirPath(cloudHostID), "node.json")
+		if err := os.WriteFile(outFile, confBytes, constants.WriteReadReadPerms); err != nil {
+			return err
+		}
+	}
+	return nil
+	if err := ansible.RunAnsiblePlaybookCopyDevnetConf(
+		app.GetAnsibleDir(),
+		strings.Join(ansibleHostIDs, ","),
+		app.GetNodesDir(),
+		app.GetAnsibleInventoryDirPath(clusterName),
+	); err != nil {
+		return err
 	}
 	return ansible.RunAnsiblePlaybookRestartAvalanchego(
 		app.GetAnsibleDir(),

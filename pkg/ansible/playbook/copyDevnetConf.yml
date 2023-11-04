@@ -14,3 +14,7 @@
       copy:
         dest: /home/ubuntu/.avalanchego/configs/genesis.json
         src: "{{ nodesDirPath }}{{ host_id.stdout }}/genesis.json"
+    - name: copy node.json to remote machine
+      copy:
+        dest: /home/ubuntu/.avalanchego/configs/node.json
+        src: "{{ nodesDirPath }}{{ host_id.stdout }}/node.json"

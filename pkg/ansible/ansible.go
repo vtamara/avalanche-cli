@@ -190,9 +190,9 @@ func RunAnsiblePlaybookCopyStakingFiles(ansibleDir, ansibleHostIDs, nodesDirPath
 	return cmdErr
 }
 
-func RunAnsiblePlaybookCopyGenesis(ansibleDir, ansibleHostIDs, nodesDirPath, inventoryPath string) error {
+func RunAnsiblePlaybookCopyDevnetConf(ansibleDir, ansibleHostIDs, nodesDirPath, inventoryPath string) error {
 	playbookInputs := "target=" + ansibleHostIDs + " nodesDirPath=" + nodesDirPath + "/"
-	cmd := exec.Command(constants.AnsiblePlaybook, constants.CopyGenesisPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
+	cmd := exec.Command(constants.AnsiblePlaybook, constants.CopyDevnetConfPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
 	cmd.Dir = ansibleDir
 	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
 	cmdErr := cmd.Run()
@@ -208,21 +208,6 @@ func RunAnsiblePlaybookCopyGenesis(ansibleDir, ansibleHostIDs, nodesDirPath, inv
 func RunAnsiblePlaybookRestartAvalanchego(ansibleDir, ansibleHostIDs, inventoryPath string) error {
 	playbookInputs := "target=" + ansibleHostIDs
 	cmd := exec.Command(constants.AnsiblePlaybook, constants.RestartAvalanchegoPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
-	cmd.Dir = ansibleDir
-	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
-	cmdErr := cmd.Run()
-	if err := displayErrMsg(stdoutBuffer); err != nil {
-		return err
-	}
-	if err := displayErrMsg(stderrBuffer); err != nil {
-		return err
-	}
-	return cmdErr
-}
-
-func RunAnsiblePlaybookSetDevnetFlags(ansibleDir, ansibleHostIDs, nodesDirPath, networkID, bootstrapIDs, bootstrapIPs, inventoryPath string) error {
-	playbookInputs := "target=" + ansibleHostIDs + " networkID=" + networkID + " bootstrapIDs=" + bootstrapIDs + " bootstrapIPs=" + bootstrapIPs
-	cmd := exec.Command(constants.AnsiblePlaybook, constants.SetDevnetFlagsPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
 	cmd.Dir = ansibleDir
 	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
 	cmdErr := cmd.Run()
