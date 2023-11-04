@@ -190,24 +190,9 @@ func RunAnsiblePlaybookCopyStakingFiles(ansibleDir, ansibleHostIDs, nodesDirPath
 	return cmdErr
 }
 
-func RunAnsiblePlaybookCopyDevnetConf(ansibleDir, ansibleHostIDs, nodesDirPath, inventoryPath string) error {
+func RunAnsiblePlaybookSetDevnet(ansibleDir, ansibleHostIDs, nodesDirPath, inventoryPath string) error {
 	playbookInputs := "target=" + ansibleHostIDs + " nodesDirPath=" + nodesDirPath + "/"
-	cmd := exec.Command(constants.AnsiblePlaybook, constants.CopyDevnetConfPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
-	cmd.Dir = ansibleDir
-	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
-	cmdErr := cmd.Run()
-	if err := displayErrMsg(stdoutBuffer); err != nil {
-		return err
-	}
-	if err := displayErrMsg(stderrBuffer); err != nil {
-		return err
-	}
-	return cmdErr
-}
-
-func RunAnsiblePlaybookRestartAvalanchego(ansibleDir, ansibleHostIDs, inventoryPath string) error {
-	playbookInputs := "target=" + ansibleHostIDs
-	cmd := exec.Command(constants.AnsiblePlaybook, constants.RestartAvalanchegoPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
+	cmd := exec.Command(constants.AnsiblePlaybook, constants.SetDevnetPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
 	cmd.Dir = ansibleDir
 	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
 	cmdErr := cmd.Run()

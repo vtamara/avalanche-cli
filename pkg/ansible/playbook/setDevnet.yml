@@ -18,3 +18,9 @@
       copy:
         dest: /home/ubuntu/.avalanchego/configs/node.json
         src: "{{ nodesDirPath }}{{ host_id.stdout }}/node.json"
+    - name: stop node
+      shell: sudo systemctl stop avalanchego
+    - name: remove previous db
+      shell: rm -rf /home/ubuntu/.avalanchego/db/
+    - name: start node
+      shell: sudo systemctl start avalanchego

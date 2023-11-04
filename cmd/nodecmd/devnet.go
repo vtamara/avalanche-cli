@@ -147,17 +147,10 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	if err := ansible.RunAnsiblePlaybookCopyDevnetConf(
+	if err := ansible.RunAnsiblePlaybookSetDevnet(
 		app.GetAnsibleDir(),
 		strings.Join(ansibleHostIDs, ","),
 		app.GetNodesDir(),
-		app.GetAnsibleInventoryDirPath(clusterName),
-	); err != nil {
-		return err
-	}
-	if err := ansible.RunAnsiblePlaybookRestartAvalanchego(
-		app.GetAnsibleDir(),
-		strings.Join(ansibleHostIDs, ","),
 		app.GetAnsibleInventoryDirPath(clusterName),
 	); err != nil {
 		return err

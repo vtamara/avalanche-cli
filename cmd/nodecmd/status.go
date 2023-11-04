@@ -124,7 +124,12 @@ func statusNode(_ *cobra.Command, args []string) error {
 			}
 		}
 	}
+	clustersConfig, err := app.LoadClustersConfig()
+	if err != nil {
+		return err
+	}
 	printOutput(
+		clustersConfig,
 		hostIDs,
 		ansibleHostIDs,
 		nodeIDs,
@@ -141,6 +146,7 @@ func statusNode(_ *cobra.Command, args []string) error {
 }
 
 func printOutput(
+	clustersConfig models.ClustersConfig,
 	hostIDs []string,
 	hostAliases []string,
 	nodeIDs []string,
@@ -169,7 +175,7 @@ func printOutput(
 	ux.Logger.PrintToUser(tit)
 	ux.Logger.PrintToUser(strings.Repeat("=", len(tit)))
 	ux.Logger.PrintToUser("")
-	header := []string{"Cloud ID", "Node ID", "Avago Version", "Primary Network", "Healthy"}
+	header := []string{"Cloud ID", "Node ID", "Network", "Avago Version", "Primary Network", "Healthy"}
 	if subnetName != "" {
 		header = append(header, "Subnet "+subnetName)
 	}
@@ -188,6 +194,7 @@ func printOutput(
 		row := []string{
 			hostIDs[i],
 			nodeIDs[i],
+			clustersConfig.Clusters[clusterName].Network.String(),
 			avagoVersions[host],
 			boostrappedStatus,
 			healthyStatus,
