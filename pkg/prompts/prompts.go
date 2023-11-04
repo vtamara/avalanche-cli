@@ -95,7 +95,7 @@ type Prompter interface {
 	CaptureUint64Compare(promptStr string, comparators []Comparator) (uint64, error)
 	CapturePChainAddress(promptStr string, network models.Network) (string, error)
 	CaptureFutureDate(promptStr string, minDate time.Time) (time.Time, error)
-	ChooseKeyOrLedger(goal string) (bool, error)
+	ChooseEwoqKeyOrLedger(goal string) (string, error)
 }
 
 type realPrompter struct{}
@@ -682,20 +682,29 @@ func (*realPrompter) CaptureFutureDate(promptStr string, minDate time.Time) (tim
 	return time.Parse(constants.TimeParseLayout, timestampStr)
 }
 
-// returns true [resp. false] if user chooses stored key [resp. ledger] option
-func (prompter *realPrompter) ChooseKeyOrLedger(goal string) (bool, error) {
+// returns "key" or "ledger" or "ewoq" or ""
+func (prompter *realPrompter) ChooseEwoqKeyOrLedger(goal string) (string, error) {
 	const (
 		keyOption    = "Use stored key"
 		ledgerOption = "Use ledger"
+		ewoqOption   = "Use ewoq key"
 	)
 	option, err := prompter.CaptureList(
 		fmt.Sprintf("Which key source should be used to %s?", goal),
-		[]string{keyOption, ledgerOption},
+		[]string{keyOption, ledgerOption, ewoqOption},
 	)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	return option == keyOption, nil
+	switch option {
+	case keyOption:
+		return "key", nil
+	case ledgerOption:
+		return "ledger", nil
+	case ewoqOption:
+		return "ewoq", nil
+	}
+	return "", nil
 }
 
 func contains[T comparable](list []T, element T) bool {
@@ -777,22 +786,22 @@ func GetSubnetAuthKeys(prompt Prompter, walletKey string, controlKeys []string, 
 	return subnetAuthKeys, nil
 }
 
-func GetFujiKeyOrLedger(prompt Prompter, goal string, keyDir string) (bool, string, error) {
-	useStoredKey, err := prompt.ChooseKeyOrLedger(goal)
+func GetEwoqKeyOrLedger(prompt Prompter, goal string, keyDir string) (bool, bool, string, error) {
+	option, err := prompt.ChooseEwoqKeyOrLedger(goal)
 	if err != nil {
-		return false, "", err
+		return false, false, "", err
 	}
-	if !useStoredKey {
-		return true, "", nil
+	if option != "key" {
+		return option == "ledger", option != "ledger", "", nil
 	}
 	keyName, err := captureKeyName(prompt, goal, keyDir)
 	if err != nil {
 		if errors.Is(err, errNoKeys) {
 			ux.Logger.PrintToUser("No private keys have been found. Create a new one with `avalanche key create`")
 		}
-		return false, "", err
+		return false, false, "", err
 	}
-	return false, keyName, nil
+	return false, false, keyName, nil
 }
 
 func captureKeyName(prompt Prompter, goal string, keyDir string) (string, error) {

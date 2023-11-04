@@ -133,7 +133,7 @@ func joinAsPrimaryNetworkValidator(nodeID ids.NodeID, network models.Network, no
 	switch network {
 	case models.Fuji:
 		if !useLedger && keyName == "" {
-			useLedger, keyName, err = prompts.GetFujiKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
 			}

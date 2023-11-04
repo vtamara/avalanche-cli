@@ -293,7 +293,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 		return transformElasticSubnetLocal(sc, subnetName, tokenName, tokenSymbol, elasticSubnetConfig, cmd)
 	case models.Fuji:
 		if !useLedger && keyName == "" {
-			useLedger, keyName, err = prompts.GetFujiKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
 			}

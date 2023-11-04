@@ -144,7 +144,7 @@ func getChainsInSubnet(subnetName string) ([]string, error) {
 }
 
 func checkDefaultAddressNotInAlloc(network models.Network, chain string) error {
-	if network != models.Local && os.Getenv(constants.SimulatePublicNetwork) == "" {
+	if network != models.Local && network != models.Devnet && os.Getenv(constants.SimulatePublicNetwork) == "" {
 		genesis, err := app.LoadEvmGenesis(chain)
 		if err != nil {
 			return err
@@ -276,6 +276,8 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	switch {
 	case deployLocal:
 		network = models.Local
+	case deployDevnet:
+		network = models.Devnet
 	case deployTestnet:
 		network = models.Fuji
 	case deployMainnet:
@@ -286,7 +288,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		// no flag was set, prompt user
 		networkStr, err := app.Prompt.CaptureList(
 			"Choose a network to deploy on",
-			[]string{models.Local.String(), models.Fuji.String(), models.Mainnet.String()},
+			[]string{models.Local.String(), models.Devnet.String(), models.Fuji.String(), models.Mainnet.String()},
 		)
 		if err != nil {
 			return err
@@ -379,9 +381,17 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		utilspkg.HandleTracking(cmd, app, flags)
 		return app.UpdateSidecarNetworks(&sidecar, network, subnetID, blockchainID)
 
+	case models.Devnet:
+		if !useLedger && !useEwoq && keyName == "" {
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			if err != nil {
+				return err
+			}
+		}
+
 	case models.Fuji:
 		if !useLedger && !useEwoq && keyName == "" {
-			useLedger, keyName, err = prompts.GetFujiKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
 			}
