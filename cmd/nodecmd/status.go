@@ -69,6 +69,10 @@ func statusNode(_ *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	notHealthyNodes, err := checkClusterIHealthy(clusterName)
+	if err != nil {
+		return err
+	}
 	notBootstrappedNodes, err := checkClusterIsBootstrapped(clusterName)
 	if err != nil {
 		return err
@@ -125,6 +129,7 @@ func statusNode(_ *cobra.Command, args []string) error {
 		ansibleHostIDs,
 		nodeIDs,
 		avalanchegoVersionForNode,
+		notHealthyNodes,
 		notBootstrappedNodes,
 		notSyncedNodes,
 		subnetSyncedNodes,
@@ -140,6 +145,7 @@ func printOutput(
 	hostAliases []string,
 	nodeIDs []string,
 	avagoVersions map[string]string,
+	notHealthyHosts []string,
 	notBootstrappedHosts []string,
 	notSyncedHosts []string,
 	subnetSyncedHosts []string,
@@ -163,7 +169,7 @@ func printOutput(
 	ux.Logger.PrintToUser(tit)
 	ux.Logger.PrintToUser(strings.Repeat("=", len(tit)))
 	ux.Logger.PrintToUser("")
-	header := []string{"Cloud ID", "Node ID", "Avago Version", "Primary Network"}
+	header := []string{"Cloud ID", "Node ID", "Avago Version", "Primary Network", "Healthy"}
 	if subnetName != "" {
 		header = append(header, "Subnet "+subnetName)
 	}
@@ -175,11 +181,16 @@ func printOutput(
 		if slices.Contains(notBootstrappedHosts, host) {
 			boostrappedStatus = logging.Red.Wrap("NOT_BOOTSTRAPPED")
 		}
+		healthyStatus := logging.Green.Wrap("OK")
+		if slices.Contains(notHealthyHosts, host) {
+			healthyStatus = logging.Red.Wrap("ERR")
+		}
 		row := []string{
 			hostIDs[i],
 			nodeIDs[i],
 			avagoVersions[host],
 			boostrappedStatus,
+			healthyStatus,
 		}
 		if subnetName != "" {
 			syncedStatus := logging.Red.Wrap("NOT_BOOTSTRAPPED")
