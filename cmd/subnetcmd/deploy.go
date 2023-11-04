@@ -64,7 +64,7 @@ var (
 
 	errMutuallyExlusiveNetworks    = errors.New("--local, --fuji (resp. --testnet) and --mainnet are mutually exclusive")
 	errMutuallyExlusiveControlKeys = errors.New("--control-keys and --same-control-key are mutually exclusive")
-	errMutuallyExlusiveKeySource   = errors.New("--key, --ewoq and --ledger/--ledger-addrs are mutually exclusive")
+	ErrMutuallyExlusiveKeySource   = errors.New("--key, --ewoq and --ledger/--ledger-addrs are mutually exclusive")
 	ErrMutuallyExlusiveKeyLedger   = errors.New("--key and --ledger,--ledger-addrs are mutually exclusive")
 	ErrStoredKeyOnMainnet          = errors.New("--key is not available for mainnet operations")
 	ErrStoredKeyOrEwoqOnMainnet    = errors.New("--key and --ewoq are not available for mainnet operations")
@@ -338,7 +338,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	}
 
 	if !flags.EnsureMutuallyExclusive([]bool{useLedger, useEwoq, keyName != ""}) {
-		return errMutuallyExlusiveKeySource
+		return ErrMutuallyExlusiveKeySource
 	}
 
 	switch network {

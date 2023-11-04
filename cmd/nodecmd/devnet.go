@@ -12,13 +12,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ava-labs/avalanche-cli/cmd/flags"
+	"github.com/ava-labs/avalanche-cli/cmd/subnetcmd"
 	"github.com/ava-labs/avalanche-cli/pkg/ansible"
 	"github.com/ava-labs/avalanche-cli/pkg/constants"
 	"github.com/ava-labs/avalanche-cli/pkg/key"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
+	"github.com/ava-labs/avalanche-cli/pkg/prompts"
 	"github.com/ava-labs/avalanche-cli/pkg/utils"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/ava-labs/avalanchego/config"
+	"github.com/ava-labs/avalanchego/utils/formatting/address"
 	coreth_params "github.com/ava-labs/coreth/params"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +40,10 @@ The node devnet command moves all nodes of a cluster into a new devnet.
 		RunE:         intoDevnet,
 	}
 
+	cmd.Flags().StringVarP(&keyName, "key", "k", "", "select the key to use")
+	cmd.Flags().BoolVarP(&useEwoq, "ewoq", "e", false, "use ewoq key")
+	cmd.Flags().BoolVarP(&useLedger, "ledger", "g", false, "use ledger instead of key")
+
 	return cmd
 }
 
@@ -47,6 +55,10 @@ var genesisTemplateBytes []byte
 
 func intoDevnet(_ *cobra.Command, args []string) error {
 	clusterName := args[0]
+
+	if !flags.EnsureMutuallyExclusive([]bool{useLedger, useEwoq, keyName != ""}) {
+		return subnetcmd.ErrMutuallyExlusiveKeySource
+	}
 
 	if err := checkCluster(clusterName); err != nil {
 		return err
@@ -69,18 +81,38 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	networkID := uint32(constants.DevnetNetworkID)
-	k, err := key.LoadEwoq(networkID)
+
+	if !useLedger && !useEwoq && keyName == "" {
+		useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "as devnet founded key", app.GetKeyDir())
+		if err != nil {
+			return err
+		}
+	}
+
+	network := models.Devnet
+	networkID, err := network.NetworkID()
 	if err != nil {
 		return err
 	}
-	walletAddr := k.X()[0]
-	k, err = key.NewSoft(networkID)
+
+	k, err := key.NewSoft(networkID)
 	if err != nil {
 		return err
 	}
-	stakingAddr := k.X()[0]
-	genesisBytes, err := generateCustomGenesis(networkID, walletAddr, stakingAddr, nodeIDs)
+	stakingAddrStr := k.X()[0]
+
+	kc, err := subnetcmd.GetKeychain(useEwoq, useLedger, nil, keyName, network)
+	if err != nil {
+		return err
+	}
+	walletAddr := kc.Addresses().List()[0]
+	hrp := key.GetHRP(networkID)
+	walletAddrStr, err := address.Format("X", hrp, walletAddr[:])
+	if err != nil {
+		return err
+	}
+
+	genesisBytes, err := generateCustomGenesis(networkID, walletAddrStr, stakingAddrStr, nodeIDs)
 	if err != nil {
 		return err
 	}
@@ -115,7 +147,6 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	return nil
 	if err := ansible.RunAnsiblePlaybookCopyDevnetConf(
 		app.GetAnsibleDir(),
 		strings.Join(ansibleHostIDs, ","),

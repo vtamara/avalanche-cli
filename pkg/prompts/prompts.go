@@ -687,7 +687,7 @@ func (prompter *realPrompter) ChooseEwoqKeyOrLedger(goal string) (string, error)
 	const (
 		keyOption    = "Use stored key"
 		ledgerOption = "Use ledger"
-		ewoqOption   = "Use ewoq key"
+		ewoqOption   = "Use ewoq"
 	)
 	option, err := prompter.CaptureList(
 		fmt.Sprintf("Which key source should be used to %s?", goal),
