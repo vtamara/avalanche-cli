@@ -22,6 +22,7 @@ func newDeployCmd() *cobra.Command {
 		Long: `(ALPHA Warning) This command is currently in experimental mode.
 
 The node deploy command deploys a subnet into a devnet cluster, creating subnet and blockchain txs for it.
+It saves the deploy info both locally and remotelly.
 `,
 		SilenceUsage: true,
 		Args:         cobra.ExactArgs(2),
@@ -43,32 +44,42 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 	if _, err := subnetcmd.ValidateSubnetNameAndGetChains([]string{subnetName}); err != nil {
 		return err
 	}
-	notHealthyNodes, err := checkClusterIsHealthy(clusterName)
+	clusterConfig, err := app.LoadClustersConfig()
 	if err != nil {
 		return err
 	}
-	if len(notHealthyNodes) > 0 {
-		return fmt.Errorf("node(s) %s are not healthy yet, please try again later", notHealthyNodes)
+	if clusterConfig.Clusters[clusterName].Network != models.Devnet {
+		return fmt.Errorf("node deploy command must be applied to devnet clusters")
 	}
-	incompatibleNodes, err := checkAvalancheGoVersionCompatible(clusterName, subnetName)
-	if err != nil {
-		return err
-	}
-	if len(incompatibleNodes) > 0 {
-		sc, err := app.LoadSidecar(subnetName)
+
+	/*
+		notHealthyNodes, err := checkClusterIsHealthy(clusterName)
 		if err != nil {
 			return err
 		}
-		ux.Logger.PrintToUser("Either modify your Avalanche Go version or modify your VM version")
-		ux.Logger.PrintToUser("To modify your Avalanche Go version: https://docs.avax.network/nodes/maintain/upgrade-your-avalanchego-node")
-		switch sc.VM {
-		case models.SubnetEvm:
-			ux.Logger.PrintToUser("To modify your Subnet-EVM version: https://docs.avax.network/build/subnet/upgrade/upgrade-subnet-vm")
-		case models.CustomVM:
-			ux.Logger.PrintToUser("To modify your Custom VM binary: avalanche subnet upgrade vm %s --config", subnetName)
+		if len(notHealthyNodes) > 0 {
+			return fmt.Errorf("node(s) %s are not healthy yet, please try again later", notHealthyNodes)
 		}
-		return fmt.Errorf("the Avalanche Go version of node(s) %s is incompatible with VM RPC version of %s", incompatibleNodes, subnetName)
-	}
+		incompatibleNodes, err := checkAvalancheGoVersionCompatible(clusterName, subnetName)
+		if err != nil {
+			return err
+		}
+		if len(incompatibleNodes) > 0 {
+			sc, err := app.LoadSidecar(subnetName)
+			if err != nil {
+				return err
+			}
+			ux.Logger.PrintToUser("Either modify your Avalanche Go version or modify your VM version")
+			ux.Logger.PrintToUser("To modify your Avalanche Go version: https://docs.avax.network/nodes/maintain/upgrade-your-avalanchego-node")
+			switch sc.VM {
+			case models.SubnetEvm:
+				ux.Logger.PrintToUser("To modify your Subnet-EVM version: https://docs.avax.network/build/subnet/upgrade/upgrade-subnet-vm")
+			case models.CustomVM:
+				ux.Logger.PrintToUser("To modify your Custom VM binary: avalanche subnet upgrade vm %s --config", subnetName)
+			}
+			return fmt.Errorf("the Avalanche Go version of node(s) %s is incompatible with VM RPC version of %s", incompatibleNodes, subnetName)
+		}
+	*/
 	if err := deploy(clusterName, subnetName, models.Fuji); err != nil {
 		return err
 	}
@@ -81,21 +92,19 @@ func deploy(clusterName, subnetName string, network models.Network) error {
 	if err := subnetcmd.CallExportSubnet(subnetName, subnetPath, network); err != nil {
 		return err
 	}
-	fmt.Println(subnetPath)
-	return nil
-	if err := ansible.RunAnsiblePlaybookExportSubnet(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), subnetPath, "/tmp", "all"); err != nil {
-		return err
-	}
-	hostAliases, err := ansible.GetAnsibleHostsFromInventory(app.GetAnsibleInventoryDirPath(clusterName))
+	ansibleHostIDs, err := ansible.GetAnsibleHostsFromInventory(app.GetAnsibleInventoryDirPath(clusterName))
 	if err != nil {
 		return err
 	}
-	untrackedNodes := []string{}
-	for _, host := range hostAliases {
-		// runs avalanche join subnet command
-		if err = ansible.RunAnsiblePlaybookTrackSubnet(app.GetAnsibleDir(), subnetName, subnetPath, app.GetAnsibleInventoryDirPath(clusterName), host); err != nil {
-			untrackedNodes = append(untrackedNodes, host)
-		}
+	if len(ansibleHostIDs) == 0 {
+		return fmt.Errorf("inventory for cluster has no nodes")
+	}
+	ansibleHostID := ansibleHostIDs[0]
+	if err := ansible.RunAnsiblePlaybookExportSubnet(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), subnetPath, "/tmp", ansibleHostID); err != nil {
+		return err
+	}
+	if err = ansible.RunAnsiblePlaybookDeploySubnet(app.GetAnsibleDir(), subnetName, subnetPath, app.GetAnsibleInventoryDirPath(clusterName), ansibleHostID); err != nil {
+		return err
 	}
 	return nil
 }

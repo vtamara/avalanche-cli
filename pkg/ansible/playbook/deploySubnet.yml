@@ -1,0 +1,10 @@
+---
+- hosts: "{{ target }}"
+  gather_facts: no
+  tasks:
+    - name: import subnet
+      shell: bash -i -c "/home/ubuntu/bin/avalanche subnet import file {{ subnetExportFileName }} --force"
+    - name: deploy subnet
+      shell: /home/ubuntu/bin/avalanche subnet deploy {{ subnetName }} --devnet --ewoq --same-control-key
+    - name: export subnet
+      shell: /home/ubuntu/bin/avalanche subnet export {{ subnetName }} --output {{ subnetExportFileName }} --devnet

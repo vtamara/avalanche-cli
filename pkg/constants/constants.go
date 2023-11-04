@@ -123,6 +123,7 @@ const (
 	IsBootstrappedPlaybook                       = "playbook/isBootstrapped.yml"
 	IsHealthyPlaybook                            = "playbook/isHealthy.yml"
 	IsSubnetSyncedPlaybook                       = "playbook/isSubnetSynced.yml"
+	DeploySubnetPlaybook                         = "playbook/deploySubnet.yml"
 	TrackSubnetPlaybook                          = "playbook/trackSubnet.yml"
 	UpdateSubnetPlaybook                         = "playbook/updateSubnet.yml"
 	AvalancheGoVersionPlaybook                   = "playbook/avalancheGoVersion.yml"

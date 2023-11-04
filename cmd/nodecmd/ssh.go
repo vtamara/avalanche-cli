@@ -59,7 +59,7 @@ func sshNode(_ *cobra.Command, args []string) error {
 			_, _ = utils.SetupRealtimeCLIOutput(cmd, true, true)
 			err = cmd.Run()
 			if err != nil {
-				return err
+				ux.Logger.PrintToUser("Error: %s", err)
 			}
 			ux.Logger.PrintToUser("")
 		}
