@@ -29,6 +29,7 @@ var (
 	validateTestnet              bool
 	validateMainnet              bool
 	keyName                      string
+	useEwoq                      bool
 	useLedger                    bool
 	ledgerAddresses              []string
 	nodeIDStr                    string
@@ -194,7 +195,7 @@ func addValidator(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("illegal weight, must be greater than or equal to %d: %d", minValStake, weight)
 	}
 
-	kc, err := subnetcmd.GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := subnetcmd.GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}

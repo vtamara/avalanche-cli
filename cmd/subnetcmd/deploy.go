@@ -45,6 +45,7 @@ var (
 	deployLocal              bool
 	deployTestnet            bool
 	deployMainnet            bool
+	deployDevnet             bool
 	sameControlKey           bool
 	keyName                  string
 	threshold                uint32
@@ -53,15 +54,20 @@ var (
 	userProvidedAvagoVersion string
 	outputTxPath             string
 	useLedger                bool
+	useEwoq                  bool
 	ledgerAddresses          []string
 	subnetIDStr              string
 	mainnetChainID           string
 	skipCreatePrompt         bool
 
+	errMutuallyExlusiveNetworksWithDevnet = errors.New("--local, --devnet, --fuji/--testnet and --mainnet are mutually exclusive")
+
 	errMutuallyExlusiveNetworks    = errors.New("--local, --fuji (resp. --testnet) and --mainnet are mutually exclusive")
 	errMutuallyExlusiveControlKeys = errors.New("--control-keys and --same-control-key are mutually exclusive")
+	errMutuallyExlusiveKeySource   = errors.New("--key, --ewoq and --ledger/--ledger-addrs are mutually exclusive")
 	ErrMutuallyExlusiveKeyLedger   = errors.New("--key and --ledger,--ledger-addrs are mutually exclusive")
 	ErrStoredKeyOnMainnet          = errors.New("--key is not available for mainnet operations")
+	ErrStoredKeyOrEwoqOnMainnet    = errors.New("--key and --ewoq are not available for mainnet operations")
 )
 
 // avalanche subnet deploy
@@ -85,19 +91,21 @@ so you can take your locally tested Subnet and deploy it on Fuji or Mainnet.`,
 		Args:              cobra.ExactArgs(1),
 	}
 	cmd.Flags().BoolVarP(&deployLocal, "local", "l", false, "deploy to a local network")
+	cmd.Flags().BoolVarP(&deployDevnet, "devnet", "d", false, "deploy to a devnet")
 	cmd.Flags().BoolVarP(&deployTestnet, "testnet", "t", false, "deploy to testnet (alias to `fuji`)")
 	cmd.Flags().BoolVarP(&deployTestnet, "fuji", "f", false, "deploy to fuji (alias to `testnet`")
 	cmd.Flags().BoolVarP(&deployMainnet, "mainnet", "m", false, "deploy to mainnet")
 	cmd.Flags().StringVar(&userProvidedAvagoVersion, "avalanchego-version", "latest", "use this version of avalanchego (ex: v1.17.12)")
-	cmd.Flags().StringVarP(&keyName, "key", "k", "", "select the key to use [fuji deploy only]")
+	cmd.Flags().StringVarP(&keyName, "key", "k", "", "select the key to use [fuji/devnet deploy only]")
 	cmd.Flags().BoolVarP(&sameControlKey, "same-control-key", "s", false, "use creation key as control key")
 	cmd.Flags().Uint32Var(&threshold, "threshold", 0, "required number of control key signatures to make subnet changes")
 	cmd.Flags().StringSliceVar(&controlKeys, "control-keys", nil, "addresses that may make subnet changes")
 	cmd.Flags().StringSliceVar(&subnetAuthKeys, "subnet-auth-keys", nil, "control keys that will be used to authenticate chain creation")
 	cmd.Flags().StringVar(&outputTxPath, "output-tx-path", "", "file path of the blockchain creation tx")
-	cmd.Flags().BoolVarP(&useLedger, "ledger", "g", false, "use ledger instead of key (always true on mainnet, defaults to false on fuji)")
+	cmd.Flags().BoolVarP(&useEwoq, "ewoq", "e", false, "use ewoq key [fuji/devnet deploy only]")
+	cmd.Flags().BoolVarP(&useLedger, "ledger", "g", false, "use ledger instead of key (always true on mainnet, defaults to false on fuji/devnet)")
 	cmd.Flags().StringSliceVar(&ledgerAddresses, "ledger-addrs", []string{}, "use the given ledger addresses")
-	cmd.Flags().StringVarP(&subnetIDStr, "subnet-id", "u", "", "deploy into given subnet id [fuji/mainnet deploy only]")
+	cmd.Flags().StringVarP(&subnetIDStr, "subnet-id", "u", "", "deploy into given subnet id")
 	cmd.Flags().StringVar(&mainnetChainID, "mainnet-chain-id", "", "use different ChainID for mainnet deployment")
 	return cmd
 }
@@ -255,8 +263,8 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	// get the network to deploy to
 	var network models.Network
 
-	if !flags.EnsureMutuallyExclusive([]bool{deployLocal, deployTestnet, deployMainnet}) {
-		return errMutuallyExlusiveNetworks
+	if !flags.EnsureMutuallyExclusive([]bool{deployLocal, deployDevnet, deployTestnet, deployMainnet}) {
+		return errMutuallyExlusiveNetworksWithDevnet
 	}
 
 	if outputTxPath != "" {
@@ -327,8 +335,8 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		useLedger = true
 	}
 
-	if useLedger && keyName != "" {
-		return ErrMutuallyExlusiveKeyLedger
+	if !flags.EnsureMutuallyExclusive([]bool{useLedger, useEwoq, keyName != ""}) {
+		return errMutuallyExlusiveKeySource
 	}
 
 	switch network {
@@ -372,7 +380,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		return app.UpdateSidecarNetworks(&sidecar, network, subnetID, blockchainID)
 
 	case models.Fuji:
-		if !useLedger && keyName == "" {
+		if !useLedger && !useEwoq && keyName == "" {
 			useLedger, keyName, err = prompts.GetFujiKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
@@ -381,8 +389,8 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 
 	case models.Mainnet:
 		useLedger = true
-		if keyName != "" {
-			return ErrStoredKeyOnMainnet
+		if keyName != "" || useEwoq {
+			return ErrStoredKeyOrEwoqOnMainnet
 		}
 
 	default:
@@ -397,7 +405,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	// from here on we are assuming a public deploy
 
 	// get keychain accessor
-	kc, err := GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}
@@ -809,6 +817,7 @@ func PrintRemainingToSignMsg(
 }
 
 func GetKeychain(
+	useEwoq bool,
 	useLedger bool,
 	ledgerAddresses []string,
 	keyName string,
@@ -854,6 +863,13 @@ func GetKeychain(
 			ux.Logger.PrintToUser(logging.Yellow.Wrap(fmt.Sprintf("  %s", addrStr)))
 		}
 		return keychain.NewLedgerKeychainFromIndices(ledgerDevice, ledgerIndices)
+	}
+	if useEwoq {
+		sf, err := key.LoadEwoq(networkID)
+		if err != nil {
+			return kc, err
+		}
+		return sf.KeyChain(), nil
 	}
 	sf, err := key.LoadSoft(networkID, app.GetKeyPath(keyName))
 	if err != nil {

@@ -309,7 +309,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 	}
 
 	// get keychain accessor
-	kc, err := GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}
@@ -705,19 +705,14 @@ func getTokenDenomination() (int, error) {
 }
 
 func CheckSubnetIsElastic(subnetID ids.ID, network models.Network) (bool, error) {
-	var apiURL string
-	switch network {
-	case models.Mainnet:
-		apiURL = constants.MainnetAPIEndpoint
-	case models.Fuji:
-		apiURL = constants.FujiAPIEndpoint
-	default:
-		return false, fmt.Errorf("invalid network: %s", network)
+	apiURL, err := network.Endpoint()
+	if err != nil {
+		return false, err
 	}
 	pClient := platformvm.NewClient(apiURL)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.E2ERequestTimeout)
 	defer cancel()
-	_, _, err := pClient.GetCurrentSupply(ctx, subnetID)
+	_, _, err = pClient.GetCurrentSupply(ctx, subnetID)
 	if err != nil {
 		// if subnet is already elastic it will return "not found" error
 		if strings.Contains(err.Error(), "not found") {

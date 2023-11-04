@@ -119,18 +119,16 @@ func getClients(networks []models.Network, cchain bool) (
 	map[models.Network]ethclient.Client,
 	error,
 ) {
-	apiEndpoints := map[models.Network]string{
-		models.Fuji:    constants.FujiAPIEndpoint,
-		models.Mainnet: constants.MainnetAPIEndpoint,
-		models.Local:   constants.LocalAPIEndpoint,
-	}
-	var err error
 	pClients := map[models.Network]platformvm.Client{}
 	cClients := map[models.Network]ethclient.Client{}
 	for _, network := range networks {
-		pClients[network] = platformvm.NewClient(apiEndpoints[network])
+		endpoint, err := network.Endpoint()
+		if err != nil {
+			return nil, nil, err
+		}
+		pClients[network] = platformvm.NewClient(endpoint)
 		if cchain {
-			cClients[network], err = ethclient.Dial(fmt.Sprintf("%s/ext/bc/%s/rpc", apiEndpoints[network], "C"))
+			cClients[network], err = ethclient.Dial(fmt.Sprintf("%s/ext/bc/%s/rpc", endpoint, "C"))
 			if err != nil {
 				return nil, nil, err
 			}

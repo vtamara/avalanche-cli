@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ava-labs/avalanche-cli/pkg/constants"
 	"github.com/ava-labs/avalanche-cli/pkg/key"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/prompts"
@@ -311,12 +310,10 @@ func transferF(*cobra.Command, []string) error {
 		}
 	}
 
-	apiEndpoints := map[models.Network]string{
-		models.Fuji:    constants.FujiAPIEndpoint,
-		models.Mainnet: constants.MainnetAPIEndpoint,
-		models.Local:   constants.LocalAPIEndpoint,
+	apiEndpoint, err := network.Endpoint()
+	if err != nil {
+		return err
 	}
-	apiEndpoint := apiEndpoints[network]
 
 	to := secp256k1fx.OutputOwners{
 		Threshold: 1,

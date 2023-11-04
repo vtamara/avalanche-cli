@@ -16,6 +16,7 @@ const (
 	Mainnet
 	Fuji
 	Local
+	Devnet
 )
 
 func (s Network) String() string {
@@ -26,6 +27,8 @@ func (s Network) String() string {
 		return "Fuji"
 	case Local:
 		return "Local Network"
+	case Devnet:
+		return "Devnet"
 	}
 	return "Unknown Network"
 }
@@ -38,8 +41,24 @@ func (s Network) NetworkID() (uint32, error) {
 		return avago_constants.FujiID, nil
 	case Local:
 		return constants.LocalNetworkID, nil
+	case Devnet:
+		return constants.DevnetNetworkID, nil
 	}
 	return 0, fmt.Errorf("unsupported network")
+}
+
+func (s Network) Endpoint() (string, error) {
+	switch s {
+	case Mainnet:
+		return constants.MainnetAPIEndpoint, nil
+	case Fuji:
+		return constants.FujiAPIEndpoint, nil
+	case Local:
+		return constants.LocalAPIEndpoint, nil
+	case Devnet:
+		return constants.DevnetAPIEndpoint, nil
+	}
+	return "", fmt.Errorf("unsupported network")
 }
 
 func NetworkFromString(s string) Network {
@@ -50,6 +69,8 @@ func NetworkFromString(s string) Network {
 		return Fuji
 	case Local.String():
 		return Local
+	case Devnet.String():
+		return Devnet
 	}
 	return Undefined
 }
@@ -62,6 +83,8 @@ func NetworkFromNetworkID(networkID uint32) Network {
 		return Fuji
 	case constants.LocalNetworkID:
 		return Local
+	case constants.DevnetNetworkID:
+		return Devnet
 	}
 	return Undefined
 }

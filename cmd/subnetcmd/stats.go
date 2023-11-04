@@ -290,16 +290,8 @@ func findAPIEndpoint(network models.Network) (platformvm.Client, info.Client) {
 		}
 	}
 
-	var url string
-	// try public APIs
-	switch network {
-	case models.Fuji:
-		url = constants.FujiAPIEndpoint
-	case models.Mainnet:
-		url = constants.MainnetAPIEndpoint
-	}
-	// unsupported network
-	if url == "" {
+	url, err := network.Endpoint()
+	if err != nil {
 		return nil, nil
 	}
 

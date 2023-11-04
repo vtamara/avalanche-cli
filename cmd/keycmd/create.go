@@ -23,9 +23,6 @@ var (
 	ewoq        bool
 )
 
-//go:embed ewoq_key.pk
-var ewoqKeyBytes []byte
-
 func createKey(_ *cobra.Command, args []string) error {
 	keyName := args[0]
 
@@ -46,8 +43,7 @@ func createKey(_ *cobra.Command, args []string) error {
 			err error
 		)
 		if ewoq {
-			ux.Logger.PrintToUser("Generating new EWOQ key...")
-			k, err = key.LoadSoftFromBytes(0, ewoqKeyBytes)
+			k, err = key.LoadEwoq(0)
 			if err != nil {
 				return err
 			}

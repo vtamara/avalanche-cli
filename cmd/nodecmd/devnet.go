@@ -44,9 +44,6 @@ const genesisLocktimeStartimeDelta = 2836800
 //go:embed genesis_template.json
 var genesisTemplateBytes []byte
 
-//go:embed ewoq_key.pk
-var ewoqKeyBytes []byte
-
 func intoDevnet(_ *cobra.Command, args []string) error {
 	clusterName := args[0]
 
@@ -71,8 +68,8 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	networkID := uint32(constants.LocalNetworkID)
-	k, err := key.LoadSoftFromBytes(networkID, ewoqKeyBytes)
+	networkID := uint32(constants.DevnetNetworkID)
+	k, err := key.LoadEwoq(networkID)
 	if err != nil {
 		return err
 	}

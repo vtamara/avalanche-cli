@@ -443,7 +443,7 @@ func handleValidatorJoinElasticSubnet(sc models.Sidecar, network models.Network,
 	}
 
 	// get keychain accessor
-	kc, err := GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}
@@ -469,18 +469,10 @@ func handleValidatorJoinElasticSubnet(sc models.Sidecar, network models.Network,
 }
 
 func getSubnetAssetID(subnetID ids.ID, network models.Network) (ids.ID, error) {
-	var api string
-	switch network {
-	case models.Fuji:
-		api = constants.FujiAPIEndpoint
-	case models.Mainnet:
-		api = constants.MainnetAPIEndpoint
-	case models.Local:
-		api = constants.LocalAPIEndpoint
-	default:
-		return ids.Empty, fmt.Errorf("network not supported")
+	api, err := network.Endpoint()
+	if err != nil {
+		return ids.Empty, err
 	}
-
 	pClient := platformvm.NewClient(api)
 	ctx := context.Background()
 	assetID, err := pClient.GetStakingAssetID(ctx, subnetID)

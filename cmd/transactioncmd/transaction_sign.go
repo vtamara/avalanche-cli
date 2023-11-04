@@ -22,6 +22,7 @@ var (
 	inputTxPath     string
 	keyName         string
 	useLedger       bool
+	useEwoq         bool
 	ledgerAddresses []string
 
 	errNoSubnetID = errors.New("failed to find the subnet ID for this subnet, has it been deployed/created on this network?")
@@ -117,7 +118,7 @@ func signTx(_ *cobra.Command, args []string) error {
 	}
 
 	// get keychain accessor
-	kc, err := subnetcmd.GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := subnetcmd.GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}

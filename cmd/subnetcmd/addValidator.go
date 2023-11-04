@@ -138,7 +138,7 @@ func addValidator(_ *cobra.Command, args []string) error {
 	}
 
 	// get keychain accesor
-	kc, err := GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}
@@ -263,19 +263,10 @@ func PromptDuration(start time.Time, network models.Network) (time.Duration, err
 }
 
 func getMaxValidationTime(network models.Network, nodeID ids.NodeID, startTime time.Time) (time.Duration, error) {
-	var uri string
-	switch network {
-	case models.Fuji:
-		uri = constants.FujiAPIEndpoint
-	case models.Mainnet:
-		uri = constants.MainnetAPIEndpoint
-	case models.Local:
-		// used for E2E testing of public related paths
-		uri = constants.LocalAPIEndpoint
-	default:
-		return 0, fmt.Errorf("unsupported public network")
+	uri, err := network.Endpoint()
+	if err != nil {
+		return 0, err
 	}
-
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, constants.RequestTimeout)
 	platformCli := platformvm.NewClient(uri)

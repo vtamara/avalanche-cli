@@ -36,6 +36,7 @@ var (
 	deployTestnet                bool
 	deployMainnet                bool
 	keyName                      string
+	useEwoq                      bool
 	useLedger                    bool
 	useStaticIP                  bool
 	ledgerAddresses              []string
@@ -95,12 +96,9 @@ func parseBootstrappedOutput(filePath string) (bool, error) {
 }
 
 func GetMinStakingAmount(network models.Network) (uint64, error) {
-	var apiURL string
-	switch network {
-	case models.Mainnet:
-		apiURL = constants.MainnetAPIEndpoint
-	case models.Fuji:
-		apiURL = constants.FujiAPIEndpoint
+	apiURL, err := network.Endpoint()
+	if err != nil {
+		return 0, nil
 	}
 	pClient := platformvm.NewClient(apiURL)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.E2ERequestTimeout)
@@ -166,7 +164,7 @@ func joinAsPrimaryNetworkValidator(nodeID ids.NodeID, network models.Network, no
 		return err
 	}
 
-	kc, err := subnetcmd.GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := subnetcmd.GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}

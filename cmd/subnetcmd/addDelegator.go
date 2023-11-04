@@ -146,7 +146,7 @@ func addPermissionlessDelegator(_ *cobra.Command, args []string) error {
 	}
 
 	// get keychain accessor
-	kc, err := GetKeychain(useLedger, ledgerAddresses, keyName, network)
+	kc, err := GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 	if err != nil {
 		return err
 	}

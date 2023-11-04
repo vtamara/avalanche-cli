@@ -137,12 +137,9 @@ func importRunningSubnet(*cobra.Command, []string) error {
 		}
 	}
 
-	var pubAPI string
-	switch network {
-	case models.Fuji:
-		pubAPI = constants.FujiAPIEndpoint
-	case models.Mainnet:
-		pubAPI = constants.MainnetAPIEndpoint
+	pubAPI, err := network.Endpoint()
+	if err != nil {
+		return err
 	}
 	client := platformvm.NewClient(pubAPI)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.RequestTimeout)

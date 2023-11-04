@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/ava-labs/avalanche-cli/pkg/constants"
+	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/cb58"
 	"github.com/ava-labs/avalanchego/utils/crypto/secp256k1"
@@ -53,7 +54,10 @@ const (
 	EwoqPrivateKey = privKeyEncPfx + rawEwoqPk
 )
 
-var keyFactory = new(secp256k1.Factory)
+var (
+	keyFactory   = new(secp256k1.Factory)
+	ewoqKeyBytes = []byte("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+)
 
 type SOp struct {
 	privKey        *secp256k1.PrivateKey
@@ -153,6 +157,11 @@ func LoadSoft(networkID uint32, keyPath string) (*SoftKey, error) {
 		return nil, err
 	}
 	return LoadSoftFromBytes(networkID, kb)
+}
+
+func LoadEwoq(networkID uint32) (*SoftKey, error) {
+	ux.Logger.PrintToUser("Loading EWOQ key")
+	return LoadSoftFromBytes(networkID, ewoqKeyBytes)
 }
 
 // LoadSoftFromBytes loads the private key from bytes and creates the corresponding SoftKey.
