@@ -3,11 +3,12 @@
 package keycmd
 
 import (
+	_ "embed"
 	"errors"
+	"fmt"
 	"regexp"
 
 	"github.com/ava-labs/avalanche-cli/pkg/key"
-	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +20,11 @@ const (
 var (
 	forceCreate bool
 	filename    string
+	ewoq        bool
 )
+
+//go:embed ewoq_key.pk
+var ewoqKeyBytes []byte
 
 func createKey(_ *cobra.Command, args []string) error {
 	keyName := args[0]
@@ -32,29 +37,33 @@ func createKey(_ *cobra.Command, args []string) error {
 		return errors.New("key already exists. Use --" + forceFlag + " parameter to overwrite")
 	}
 
+	if filename != "" && ewoq {
+		return fmt.Errorf("asked to create both a standard ewoq key and a key from file")
+	}
 	if filename == "" {
-		// Create key from scratch
-		ux.Logger.PrintToUser("Generating new key...")
-		k, err := key.NewSoft(0)
-		if err != nil {
-			return err
+		var (
+			k   *key.SoftKey
+			err error
+		)
+		if ewoq {
+			ux.Logger.PrintToUser("Generating new EWOQ key...")
+			k, err = key.LoadSoftFromBytes(0, ewoqKeyBytes)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Create key from scratch
+			ux.Logger.PrintToUser("Generating new key...")
+			k, err = key.NewSoft(0)
+			if err != nil {
+				return err
+			}
 		}
 		keyPath := app.GetKeyPath(keyName)
 		if err := k.Save(keyPath); err != nil {
 			return err
 		}
 		ux.Logger.PrintToUser("Key created")
-		networks := []models.Network{models.Fuji, models.Mainnet}
-		cchain := true
-		pClients, cClients, err := getClients(networks, cchain)
-		if err != nil {
-			return err
-		}
-		addrInfos, err := getStoredKeyInfo(pClients, cClients, networks, keyPath, cchain)
-		if err != nil {
-			return err
-		}
-		printAddrInfos(addrInfos)
 	} else {
 		// Load key from file
 		// TODO add validation that key is legal
@@ -98,6 +107,12 @@ If you'd like to import an existing key instead of generating one from scratch, 
 		"f",
 		false,
 		"overwrite an existing key with the same name",
+	)
+	cmd.Flags().BoolVar(
+		&ewoq,
+		"ewoq",
+		false,
+		"create a standard ewoq key",
 	)
 	return cmd
 }
