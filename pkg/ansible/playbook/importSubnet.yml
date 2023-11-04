@@ -6,3 +6,4 @@
       fetch:
         src: "{{ subnetPath }}"
         dest: "{{ subnetPath }}"
+        flat: true

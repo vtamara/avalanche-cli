@@ -5,11 +5,9 @@ package nodecmd
 import (
 	"fmt"
 
-	"github.com/ava-labs/avalanche-cli/pkg/constants"
-
-	"github.com/ava-labs/avalanche-cli/pkg/ansible"
-
 	"github.com/ava-labs/avalanche-cli/cmd/subnetcmd"
+	"github.com/ava-labs/avalanche-cli/pkg/ansible"
+	"github.com/ava-labs/avalanche-cli/pkg/constants"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/spf13/cobra"
@@ -80,7 +78,7 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 			return fmt.Errorf("the Avalanche Go version of node(s) %s is incompatible with VM RPC version of %s", incompatibleNodes, subnetName)
 		}
 	*/
-	if err := deploy(clusterName, subnetName, models.Fuji); err != nil {
+	if err := deploy(clusterName, subnetName, models.Devnet); err != nil {
 		return err
 	}
 	ux.Logger.PrintToUser("Subnet successfully deployed into devnet!")
@@ -112,7 +110,15 @@ func deploy(clusterName, subnetName string, network models.Network) error {
 	if err := ansible.RunAnsiblePlaybookImportSubnet(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), subnetPath, ansibleHostID); err != nil {
 		return err
 	}
-	if err := subnetcmd.CallImportSubnet(subnetName, subnetPath); err != nil {
+	if err := subnetcmd.CallImportSubnet(subnetName, subnetPath, true); err != nil {
+		return err
+	}
+	sc, err := app.LoadSidecar(subnetName)
+	if err != nil {
+		return err
+	}
+	networkData := sc.Networks[network.String()]
+	if err := subnetcmd.PrintDeployResults(subnetName, networkData.SubnetID, networkData.BlockchainID); err != nil {
 		return err
 	}
 	return nil
