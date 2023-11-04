@@ -1,0 +1,16 @@
+---
+- hosts: "{{ target }}"
+  gather_facts: no
+  tasks:
+    - name: get host id
+      shell: echo {{ inventory_hostname}} | awk -F_ '{print $NF}'
+      register: host_id
+    - name: ensures dest dir exists
+      file: 
+        path: "/home/ubuntu/.avalanchego/configs/"
+        state: directory
+        recurse: yes
+    - name: copy genesis.json to remote machine
+      copy:
+        dest: /home/ubuntu/.avalanchego/configs/genesis.json
+        src: "{{ nodesDirPath }}{{ host_id.stdout }}/genesis.json"

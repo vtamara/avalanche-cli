@@ -114,6 +114,7 @@ const (
 	AnsiblePlaybook                              = "ansible-playbook"
 	SetupNodePlaybook                            = "playbook/setupNode.yml"
 	CopyStakingFilesPlaybook                     = "playbook/copyStakingFiles.yml"
+	CopyGenesisPlaybook                          = "playbook/copyGenesis.yml"
 	ExportSubnetPlaybook                         = "playbook/exportSubnet.yml"
 	IsBootstrappedPlaybook                       = "playbook/isBootstrapped.yml"
 	IsSubnetSyncedPlaybook                       = "playbook/isSubnetSynced.yml"

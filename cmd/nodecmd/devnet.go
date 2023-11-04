@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ava-labs/avalanche-cli/pkg/ansible"
@@ -77,23 +79,33 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 		return err
 	}
 	stakingAddr := k.X()[0]
-	return generateCustomGenesis(networkID, walletAddr, stakingAddr, nodeIDs, "pepe.json")
+	genesisBytes, err := generateCustomGenesis(networkID, walletAddr, stakingAddr, nodeIDs)
+	if err != nil {
+		return err
+	}
+	for _, cloudHostID := range cloudHostIDs {
+		outFile := filepath.Join(app.GetNodeInstanceDirPath(cloudHostID), "genesis.json")
+		if err := os.WriteFile(outFile, genesisBytes, constants.WriteReadReadPerms); err != nil {
+			return err
+		}
+	}
+	return ansible.RunAnsiblePlaybookCopyGenesis(app.GetAnsibleDir(), strings.Join(ansibleHostIDs, ","), app.GetNodesDir(), app.GetAnsibleInventoryDirPath(clusterName))
 }
 
-func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr string, nodeIDs []string, outPath string) error {
+func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr string, nodeIDs []string) ([]byte, error) {
 	genesisMap := map[string]interface{}{}
 	if err := json.Unmarshal(genesisTemplateBytes, &genesisMap); err != nil {
-		return err
+		return nil, err
 	}
 	cChainGenesis := genesisMap["cChainGenesis"]
 	cChainGenesisMap, ok := cChainGenesis.(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("expected field 'cChainGenesis' of genesisMap to be a map[string]interface{}, but it failed with type %T", cChainGenesis)
+		return nil, fmt.Errorf("expected field 'cChainGenesis' of genesisMap to be a map[string]interface{}, but it failed with type %T", cChainGenesis)
 	}
 	cChainGenesisMap["config"] = coreth_params.AvalancheLocalChainConfig
 	cChainGenesisBytes, err := json.Marshal(cChainGenesisMap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	genesisMap["cChainGenesis"] = string(cChainGenesisBytes)
 	genesisMap["networkID"] = networkID
@@ -137,7 +149,7 @@ func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr stri
 
 	updatedGenesis, err := json.MarshalIndent(genesisMap, "", " ")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return os.WriteFile(outPath, updatedGenesis, constants.DefaultPerms755)
+	return updatedGenesis, nil
 }

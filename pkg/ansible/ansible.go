@@ -190,6 +190,21 @@ func RunAnsiblePlaybookCopyStakingFiles(ansibleDir, ansibleHostIDs, nodesDirPath
 	return cmdErr
 }
 
+func RunAnsiblePlaybookCopyGenesis(ansibleDir, ansibleHostIDs, nodesDirPath, inventoryPath string) error {
+	playbookInputs := "target=" + ansibleHostIDs + " nodesDirPath=" + nodesDirPath + "/"
+	cmd := exec.Command(constants.AnsiblePlaybook, constants.CopyGenesisPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
+	cmd.Dir = ansibleDir
+	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
+	cmdErr := cmd.Run()
+	if err := displayErrMsg(stdoutBuffer); err != nil {
+		return err
+	}
+	if err := displayErrMsg(stderrBuffer); err != nil {
+		return err
+	}
+	return cmdErr
+}
+
 // RunAnsiblePlaybookExportSubnet exports deployed Subnet from local machine to cloud server
 // targets a specific host ansibleHostID in ansible inventory file
 func RunAnsiblePlaybookExportSubnet(ansibleDir, inventoryPath, exportPath, cloudServerSubnetPath, ansibleHostID string) error {
