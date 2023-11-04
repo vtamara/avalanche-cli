@@ -120,6 +120,7 @@ const (
 	CopyStakingFilesPlaybook                     = "playbook/copyStakingFiles.yml"
 	SetDevnetPlaybook                            = "playbook/setDevnet.yml"
 	ExportSubnetPlaybook                         = "playbook/exportSubnet.yml"
+	ImportSubnetPlaybook                         = "playbook/importSubnet.yml"
 	IsBootstrappedPlaybook                       = "playbook/isBootstrapped.yml"
 	IsHealthyPlaybook                            = "playbook/isHealthy.yml"
 	IsSubnetSyncedPlaybook                       = "playbook/isSubnetSynced.yml"
