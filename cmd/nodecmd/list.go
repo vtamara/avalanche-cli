@@ -5,9 +5,7 @@ package nodecmd
 import (
 	"fmt"
 
-	"github.com/ava-labs/avalanche-cli/pkg/ansible"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
-	"github.com/ava-labs/avalanche-cli/pkg/utils"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 
 	"github.com/spf13/cobra"
@@ -30,9 +28,9 @@ The node list command lists all clusters together with their nodes.`,
 
 func list(_ *cobra.Command, _ []string) error {
 	var err error
-	clusterConfig := models.ClusterConfig{}
-	if app.ClusterConfigExists() {
-		clusterConfig, err = app.LoadClusterConfig()
+	clusterConfig := models.ClustersConfig{}
+	if app.ClustersConfigExists() {
+		clusterConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return err
 		}
@@ -40,34 +38,20 @@ func list(_ *cobra.Command, _ []string) error {
 	if len(clusterConfig.Clusters) == 0 {
 		ux.Logger.PrintToUser("There are no clusters defined.")
 	}
-	for clusterName, clusterNodes := range clusterConfig.Clusters {
-		ux.Logger.PrintToUser(fmt.Sprintf("Cluster %q", clusterName))
+	for clusterName, clusterConf := range clusterConfig.Clusters {
+		ux.Logger.PrintToUser(fmt.Sprintf("Cluster %q (%s)", clusterName, clusterConf.Network.String()))
 		if err := checkCluster(clusterName); err != nil {
 			return err
 		}
 		if err := setupAnsible(clusterName); err != nil {
 			return err
 		}
-		ansibleHosts, err := ansible.GetHostMapfromAnsibleInventory(app.GetAnsibleInventoryDirPath(clusterName))
-		if err != nil {
-			return err
-		}
-		for _, clusterNode := range clusterNodes {
-			nodeConfig, err := app.LoadClusterNodeConfig(clusterNode)
-			if err != nil {
-				return err
-			}
-			hostName, err := models.HostCloudIDToAnsibleID(nodeConfig.CloudService, clusterNode)
-			if err != nil {
-				return err
-			}
+		for _, clusterNode := range clusterConf.Nodes {
 			nodeID, err := getNodeID(app.GetNodeInstanceDirPath(clusterNode))
 			if err != nil {
 				return err
 			}
-			ux.Logger.PrintToUser(fmt.Sprintf("  Node %s", clusterNode))
-			ux.Logger.PrintToUser(fmt.Sprintf("    Avalanche ID: %s", nodeID.String()))
-			ux.Logger.PrintToUser(fmt.Sprintf("    SSH cmd: %s", utils.GetSSHConnectionString(ansibleHosts[hostName].IP, ansibleHosts[hostName].SSHPrivateKeyPath)))
+			ux.Logger.PrintToUser(fmt.Sprintf("  Node %s (%s)", clusterNode, nodeID.String()))
 		}
 	}
 	return nil

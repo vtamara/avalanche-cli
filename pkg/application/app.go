@@ -195,8 +195,8 @@ func (app *Avalanche) GetTempCertPath(certName string) string {
 	return filepath.Join(app.GetTerraformDir(), certName)
 }
 
-func (app *Avalanche) GetClusterConfigPath() string {
-	return filepath.Join(app.GetNodesDir(), constants.ClusterConfigFileName)
+func (app *Avalanche) GetClustersConfigPath() string {
+	return filepath.Join(app.GetNodesDir(), constants.ClustersConfigFileName)
 }
 
 func (app *Avalanche) GetNodeBLSSecretKeyPath(instanceID string) string {
@@ -329,8 +329,8 @@ func (app *Avalanche) NetworkUpgradeExists(subnetName string) bool {
 	return err == nil
 }
 
-func (app *Avalanche) ClusterConfigExists() bool {
-	_, err := os.Stat(app.GetClusterConfigPath())
+func (app *Avalanche) ClustersConfigExists() bool {
+	_, err := os.Stat(app.GetClustersConfigPath())
 	return err == nil
 }
 
@@ -682,19 +682,19 @@ func (app *Avalanche) LoadClusterNodeConfig(nodeName string) (models.NodeConfig,
 	return nodeConfig, err
 }
 
-func (app *Avalanche) LoadClusterConfig() (models.ClusterConfig, error) {
-	clusterConfigPath := app.GetClusterConfigPath()
+func (app *Avalanche) LoadClustersConfig() (models.ClustersConfig, error) {
+	clusterConfigPath := app.GetClustersConfigPath()
 	jsonBytes, err := os.ReadFile(clusterConfigPath)
 	if err != nil {
-		return models.ClusterConfig{}, err
+		return models.ClustersConfig{}, err
 	}
-	var clusterConfig models.ClusterConfig
+	var clusterConfig models.ClustersConfig
 	err = json.Unmarshal(jsonBytes, &clusterConfig)
 	return clusterConfig, err
 }
 
-func (app *Avalanche) WriteClusterConfigFile(clusterConfig *models.ClusterConfig) error {
-	clusterConfigPath := app.GetClusterConfigPath()
+func (app *Avalanche) WriteClustersConfigFile(clusterConfig *models.ClustersConfig) error {
+	clusterConfigPath := app.GetClustersConfigPath()
 	if err := os.MkdirAll(filepath.Dir(clusterConfigPath), constants.DefaultPerms755); err != nil {
 		return err
 	}

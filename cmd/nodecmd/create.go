@@ -177,11 +177,12 @@ func createNodes(_ *cobra.Command, args []string) error {
 		gcpProjectName = projectName
 		gcpCredentialFilepath = credentialFilepath
 	}
-	if err = createClusterNodeConfig(cloudConfig, clusterName, cloudService); err != nil {
+	network := models.Fuji
+	if err = createClusterNodeConfig(network, cloudConfig, clusterName, cloudService); err != nil {
 		return err
 	}
 	if cloudService == constants.GCPCloudService {
-		if err = updateClusterConfigGCPKeyFilepath(gcpProjectName, gcpCredentialFilepath); err != nil {
+		if err = updateClustersConfigGCPKeyFilepath(gcpProjectName, gcpCredentialFilepath); err != nil {
 			return err
 		}
 	}
@@ -221,7 +222,7 @@ func createNodes(_ *cobra.Command, args []string) error {
 // createClusterNodeConfig creates node config and save it in .avalanche-cli/nodes/{instanceID}
 // also creates cluster config in .avalanche-cli/nodes storing various key pair and security group info for all clusters
 // func createClusterNodeConfig(nodeIDs, publicIPs []string, region, ami, keyPairName, certPath, sg, clusterName string) error {
-func createClusterNodeConfig(cloudConfig CloudConfig, clusterName, cloudService string) error {
+func createClusterNodeConfig(network models.Network, cloudConfig CloudConfig, clusterName, cloudService string) error {
 	for i := range cloudConfig.InstanceIDs {
 		publicIP := ""
 		if len(cloudConfig.PublicIPs) > 0 {
@@ -241,18 +242,18 @@ func createClusterNodeConfig(cloudConfig CloudConfig, clusterName, cloudService 
 		if err != nil {
 			return err
 		}
-		if err = addNodeToClusterConfig(cloudConfig.InstanceIDs[i], clusterName); err != nil {
+		if err = addNodeToClustersConfig(network, cloudConfig.InstanceIDs[i], clusterName); err != nil {
 			return err
 		}
 	}
-	return updateKeyPairClusterConfig(cloudConfig)
+	return updateKeyPairClustersConfig(cloudConfig)
 }
 
-func updateKeyPairClusterConfig(cloudConfig CloudConfig) error {
-	clusterConfig := models.ClusterConfig{}
+func updateKeyPairClustersConfig(cloudConfig CloudConfig) error {
+	clusterConfig := models.ClustersConfig{}
 	var err error
-	if app.ClusterConfigExists() {
-		clusterConfig, err = app.LoadClusterConfig()
+	if app.ClustersConfigExists() {
+		clusterConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return err
 		}
@@ -263,26 +264,35 @@ func updateKeyPairClusterConfig(cloudConfig CloudConfig) error {
 	if _, ok := clusterConfig.KeyPair[cloudConfig.KeyPair]; !ok {
 		clusterConfig.KeyPair[cloudConfig.KeyPair] = cloudConfig.CertFilePath
 	}
-	return app.WriteClusterConfigFile(&clusterConfig)
+	return app.WriteClustersConfigFile(&clusterConfig)
 }
 
-func addNodeToClusterConfig(nodeID, clusterName string) error {
-	clusterConfig := models.ClusterConfig{}
+func addNodeToClustersConfig(network models.Network, nodeID, clusterName string) error {
+	clusterConfig := models.ClustersConfig{}
 	var err error
-	if app.ClusterConfigExists() {
-		clusterConfig, err = app.LoadClusterConfig()
+	if app.ClustersConfigExists() {
+		clusterConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return err
 		}
 	}
 	if clusterConfig.Clusters == nil {
-		clusterConfig.Clusters = make(map[string][]string)
+		clusterConfig.Clusters = make(map[string]models.ClusterConfig)
 	}
 	if _, ok := clusterConfig.Clusters[clusterName]; !ok {
-		clusterConfig.Clusters[clusterName] = []string{}
+		clusterConfig.Clusters[clusterName] = models.ClusterConfig{
+			Network: network,
+			Nodes:   []string{},
+		}
+
 	}
-	clusterConfig.Clusters[clusterName] = append(clusterConfig.Clusters[clusterName], nodeID)
-	return app.WriteClusterConfigFile(&clusterConfig)
+	nodes := clusterConfig.Clusters[clusterName].Nodes
+	nodes = append(clusterConfig.Clusters[clusterName].Nodes, nodeID)
+	clusterConfig.Clusters[clusterName] = models.ClusterConfig{
+		Network: network,
+		Nodes:   nodes,
+	}
+	return app.WriteClustersConfigFile(&clusterConfig)
 }
 
 // setupAnsible we need to remove existing ansible directory and its contents in .avalanche-cli dir

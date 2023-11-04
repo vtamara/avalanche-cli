@@ -155,11 +155,23 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 	); err != nil {
 		return err
 	}
-	return ansible.RunAnsiblePlaybookRestartAvalanchego(
+	if err := ansible.RunAnsiblePlaybookRestartAvalanchego(
 		app.GetAnsibleDir(),
 		strings.Join(ansibleHostIDs, ","),
 		app.GetAnsibleInventoryDirPath(clusterName),
-	)
+	); err != nil {
+		return err
+	}
+	clustersConfig, err := app.LoadClustersConfig()
+	if err != nil {
+		return err
+	}
+	clusterConfig := clustersConfig.Clusters[clusterName]
+	clustersConfig.Clusters[clusterName] = models.ClusterConfig{
+		Network: network,
+		Nodes:   clusterConfig.Nodes,
+	}
+	return app.WriteClustersConfigFile(&clustersConfig)
 }
 
 func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr string, nodeIDs []string) ([]byte, error) {
@@ -224,7 +236,7 @@ func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr stri
 	return updatedGenesis, nil
 }
 
-func checkClusterIHealthy(clusterName string) ([]string, error) {
+func checkClusterIsHealthy(clusterName string) ([]string, error) {
 	ansibleNodeIDs, err := ansible.GetAnsibleHostsFromInventory(app.GetAnsibleInventoryDirPath(clusterName))
 	if err != nil {
 		return nil, err

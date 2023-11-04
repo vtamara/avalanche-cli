@@ -33,7 +33,7 @@ const (
 	StopAWSNode                  = "stop-aws-node"
 	CreateAWSNode                = "create-aws-node"
 	GetAWSNodeIP                 = "get-aws-node-ip"
-	ClusterConfigFileName        = "cluster_config.json"
+	ClustersConfigFileName       = "cluster_config.json"
 	StakerCertFileName           = "staker.crt"
 	StakerKeyFileName            = "staker.key"
 	BLSKeyFileName               = "signer.key"

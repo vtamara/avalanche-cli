@@ -43,11 +43,11 @@ Note that a stopped node may still incur cloud server storage fees.`,
 	return cmd
 }
 
-func removeNodeFromClusterConfig(clusterName string) error {
-	clusterConfig := models.ClusterConfig{}
+func removeNodeFromClustersConfig(clusterName string) error {
+	clusterConfig := models.ClustersConfig{}
 	var err error
-	if app.ClusterConfigExists() {
-		clusterConfig, err = app.LoadClusterConfig()
+	if app.ClustersConfigExists() {
+		clusterConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ func removeNodeFromClusterConfig(clusterName string) error {
 	if clusterConfig.Clusters != nil {
 		delete(clusterConfig.Clusters, clusterName)
 	}
-	return app.WriteClusterConfigFile(&clusterConfig)
+	return app.WriteClustersConfigFile(&clusterConfig)
 }
 
 func removeDeletedNodeDirectory(clusterName string) error {
@@ -83,11 +83,11 @@ func getDeleteConfigConfirmation() error {
 	return nil
 }
 
-func removeClusterConfigFiles(clusterName string) error {
+func removeClustersConfigFiles(clusterName string) error {
 	if err := removeClusterInventoryDir(clusterName); err != nil {
 		return err
 	}
-	return removeNodeFromClusterConfig(clusterName)
+	return removeNodeFromClustersConfig(clusterName)
 }
 
 func stopNodes(_ *cobra.Command, args []string) error {
@@ -163,7 +163,7 @@ func stopNodes(_ *cobra.Command, args []string) error {
 	} else {
 		ux.Logger.PrintToUser(fmt.Sprintf("All nodes in cluster %s are successfully stopped!", clusterName))
 	}
-	return removeClusterConfigFiles(clusterName)
+	return removeClustersConfigFiles(clusterName)
 }
 
 func checkCluster(clusterName string) error {
@@ -172,10 +172,10 @@ func checkCluster(clusterName string) error {
 }
 
 func getClusterNodes(clusterName string) ([]string, error) {
-	clusterConfig := models.ClusterConfig{}
-	if app.ClusterConfigExists() {
+	clusterConfig := models.ClustersConfig{}
+	if app.ClustersConfigExists() {
 		var err error
-		clusterConfig, err = app.LoadClusterConfig()
+		clusterConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +183,7 @@ func getClusterNodes(clusterName string) ([]string, error) {
 	if _, ok := clusterConfig.Clusters[clusterName]; !ok {
 		return nil, fmt.Errorf("cluster %q does not exist", clusterName)
 	}
-	clusterNodes := clusterConfig.Clusters[clusterName]
+	clusterNodes := clusterConfig.Clusters[clusterName].Nodes
 	if len(clusterNodes) == 0 {
 		return nil, fmt.Errorf("no nodes found in cluster %s", clusterName)
 	}

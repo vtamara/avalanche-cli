@@ -69,7 +69,7 @@ func statusNode(_ *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	notHealthyNodes, err := checkClusterIHealthy(clusterName)
+	notHealthyNodes, err := checkClusterIsHealthy(clusterName)
 	if err != nil {
 		return err
 	}
