@@ -146,7 +146,14 @@ func createSubnetConfig(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	case models.CustomVM:
-		genesisBytes, sc, err = vm.CreateCustomSubnetConfig(app, subnetName, genesisFile, vmFile)
+		genesisBytes, sc, err = vm.CreateCustomSubnetConfig(
+			app,
+			subnetName,
+			genesisFile,
+			customVMRepoURL,
+			customVMBranch,
+			customVMBuildScript,
+		)
 		if err != nil {
 			return err
 		}
@@ -161,11 +168,6 @@ func createSubnetConfig(cmd *cobra.Command, args []string) error {
 	sc.ImportedFromAPM = false
 	if err = app.CreateSidecar(sc); err != nil {
 		return err
-	}
-	if sc.VM == models.CustomVM {
-		if err := setCustomVMSourceCodeFields(sc, customVMRepoURL, customVMBranch, customVMBuildScript); err != nil {
-			return err
-		}
 	}
 	if subnetType == models.SubnetEvm {
 		err = sendMetrics(cmd, subnetType.RepoName(), subnetName)
