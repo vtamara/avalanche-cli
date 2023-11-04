@@ -89,7 +89,40 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	return ansible.RunAnsiblePlaybookCopyGenesis(app.GetAnsibleDir(), strings.Join(ansibleHostIDs, ","), app.GetNodesDir(), app.GetAnsibleInventoryDirPath(clusterName))
+	if err := ansible.RunAnsiblePlaybookCopyGenesis(
+		app.GetAnsibleDir(),
+		strings.Join(ansibleHostIDs, ","),
+		app.GetNodesDir(),
+		app.GetAnsibleInventoryDirPath(clusterName),
+	); err != nil {
+		return err
+	}
+	ansibleHosts, err := ansible.GetHostMapfromAnsibleInventory(app.GetAnsibleInventoryDirPath(clusterName))
+	if err != nil {
+		return err
+	}
+	bootstrapIPs := []string{}
+	bootstrapIDs := []string{}
+	for i, ansibleHostID := range ansibleHostIDs {
+		if err := ansible.RunAnsiblePlaybookSetDevnetFlags(
+			app.GetAnsibleDir(),
+			ansibleHostID,
+			app.GetNodesDir(),
+			fmt.Sprint(networkID),
+			strings.Join(bootstrapIDs, ","),
+			strings.Join(bootstrapIPs, ","),
+			app.GetAnsibleInventoryDirPath(clusterName),
+		); err != nil {
+			return err
+		}
+		bootstrapIDs = append(bootstrapIDs, nodeIDs[i])
+		bootstrapIPs = append(bootstrapIPs, ansibleHosts[ansibleHostID].IP+":9651")
+	}
+	return ansible.RunAnsiblePlaybookRestartAvalanchego(
+		app.GetAnsibleDir(),
+		strings.Join(ansibleHostIDs, ","),
+		app.GetAnsibleInventoryDirPath(clusterName),
+	)
 }
 
 func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr string, nodeIDs []string) ([]byte, error) {

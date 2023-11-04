@@ -1,0 +1,6 @@
+---
+- hosts: "{{ target }}"
+  gather_facts: no
+  tasks:
+    - name: restart node - restart avalanchego
+      shell: sudo systemctl restart avalanchego

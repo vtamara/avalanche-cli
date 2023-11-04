@@ -205,6 +205,36 @@ func RunAnsiblePlaybookCopyGenesis(ansibleDir, ansibleHostIDs, nodesDirPath, inv
 	return cmdErr
 }
 
+func RunAnsiblePlaybookRestartAvalanchego(ansibleDir, ansibleHostIDs, inventoryPath string) error {
+	playbookInputs := "target=" + ansibleHostIDs
+	cmd := exec.Command(constants.AnsiblePlaybook, constants.RestartAvalanchegoPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
+	cmd.Dir = ansibleDir
+	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
+	cmdErr := cmd.Run()
+	if err := displayErrMsg(stdoutBuffer); err != nil {
+		return err
+	}
+	if err := displayErrMsg(stderrBuffer); err != nil {
+		return err
+	}
+	return cmdErr
+}
+
+func RunAnsiblePlaybookSetDevnetFlags(ansibleDir, ansibleHostIDs, nodesDirPath, networkID, bootstrapIDs, bootstrapIPs, inventoryPath string) error {
+	playbookInputs := "target=" + ansibleHostIDs + " networkID=" + networkID + " bootstrapIDs=" + bootstrapIDs + " bootstrapIPs=" + bootstrapIPs
+	cmd := exec.Command(constants.AnsiblePlaybook, constants.SetDevnetFlagsPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
+	cmd.Dir = ansibleDir
+	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
+	cmdErr := cmd.Run()
+	if err := displayErrMsg(stdoutBuffer); err != nil {
+		return err
+	}
+	if err := displayErrMsg(stderrBuffer); err != nil {
+		return err
+	}
+	return cmdErr
+}
+
 // RunAnsiblePlaybookExportSubnet exports deployed Subnet from local machine to cloud server
 // targets a specific host ansibleHostID in ansible inventory file
 func RunAnsiblePlaybookExportSubnet(ansibleDir, inventoryPath, exportPath, cloudServerSubnetPath, ansibleHostID string) error {
