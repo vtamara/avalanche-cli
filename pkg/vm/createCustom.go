@@ -117,7 +117,7 @@ func SetCustomVMSourceCodeFields(app *application.Avalanche, sc *models.Sidecar,
 	sc.CustomVMRepoURL = customVMRepoURL
 	sc.CustomVMBranch = customVMBranch
 	sc.CustomVMBuildScript = customVMBuildScript
-	return app.UpdateSidecar(sc)
+	return nil
 }
 
 func checkGitIsInstalled() error {
@@ -171,5 +171,6 @@ func BuildCustomVM(
 	if info.Mode()&0x0100 == 0 {
 		return fmt.Errorf("custom VM binary %s not executable. Expected build script to create an executable file", vmPath)
 	}
+	fmt.Println("ALL GOOD")
 	return nil
 }

@@ -113,6 +113,9 @@ func exportSubnet(_ *cobra.Command, args []string) error {
 			if err := vm.SetCustomVMSourceCodeFields(app, &sc, customVMRepoURL, customVMBranch, customVMBuildScript); err != nil {
 				return err
 			}
+			if err := app.UpdateSidecar(&sc); err != nil {
+				return err
+			}
 		}
 	}
 
