@@ -23,7 +23,7 @@ The node ssh command execute a given command using ssh on all nodes in the clust
 If no command is given, just prints the ssh cmdLine to be used to connect to each node.
 `,
 		SilenceUsage: true,
-		Args:         cobra.MinimumNArgs(1),
+		Args:         cobra.MinimumNArgs(0),
 		RunE:         sshNode,
 	}
 
@@ -31,6 +31,32 @@ If no command is given, just prints the ssh cmdLine to be used to connect to eac
 }
 
 func sshNode(_ *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		var err error
+		clusterConfig := models.ClustersConfig{}
+		if app.ClustersConfigExists() {
+			clusterConfig, err = app.LoadClustersConfig()
+			if err != nil {
+				return err
+			}
+		}
+		if len(clusterConfig.Clusters) == 0 {
+			ux.Logger.PrintToUser("There are no clusters defined.")
+		}
+		for clusterName, clusterConfig := range clusterConfig.Clusters {
+			ux.Logger.PrintToUser("Cluster %q (%s)", clusterName, clusterConfig.Network.String())
+			if err := sshCluster([]string{clusterName}, "  "); err != nil {
+				return err
+			}
+			ux.Logger.PrintToUser("")
+		}
+	} else {
+		sshCluster(args, "")
+	}
+	return nil
+}
+
+func sshCluster(args []string, indent string) error {
 	clusterName := args[0]
 	if err := checkCluster(clusterName); err != nil {
 		return err
@@ -52,7 +78,7 @@ func sshNode(_ *cobra.Command, args []string) error {
 			return err
 		}
 		cmdLine := utils.GetSSHConnectionString(ansibleHosts[host].IP, ansibleHosts[host].SSHPrivateKeyPath) + " " + strings.Join(args[1:], " ")
-		ux.Logger.PrintToUser("[%s] %s", cloudID, cmdLine)
+		ux.Logger.PrintToUser("%s[%s] %s", indent, cloudID, cmdLine)
 		if len(args) > 1 {
 			splitCmdLine := strings.Split(cmdLine, " ")
 			cmd := exec.Command(splitCmdLine[0], splitCmdLine[1:]...)

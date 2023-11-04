@@ -30,9 +30,11 @@ func newStatusCmd() *cobra.Command {
 		Long: `(ALPHA Warning) This command is currently in experimental mode.
 
 The node status command gets the bootstrap status of all nodes in a cluster with the Primary Network. 
+If no cluster is given, defaults to node list behaviour.
+
 To get the bootstrap status of a node with a Subnet, use --subnet flag`,
 		SilenceUsage: true,
-		Args:         cobra.ExactArgs(1),
+		Args:         cobra.MinimumNArgs(0),
 		RunE:         statusNode,
 	}
 	cmd.Flags().StringVar(&subnetName, "subnet", "", "specify the subnet the node is syncing with")
@@ -41,6 +43,9 @@ To get the bootstrap status of a node with a Subnet, use --subnet flag`,
 }
 
 func statusNode(_ *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return list(nil, nil)
+	}
 	clusterName := args[0]
 	if err := checkCluster(clusterName); err != nil {
 		return err
