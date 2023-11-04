@@ -40,6 +40,7 @@ type SoftKey struct {
 	privKeyEncoded string
 
 	pAddr string
+	xAddr string
 
 	keyChain *secp256k1fx.Keychain
 }
@@ -137,6 +138,10 @@ func NewSoft(networkID uint32, opts ...SOpOption) (*SoftKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	m.xAddr, err = address.Format("X", hrp, m.privKey.PublicKey().Address().Bytes())
+	if err != nil {
+		return nil, err
+	}
 
 	return m, nil
 }
@@ -147,7 +152,11 @@ func LoadSoft(networkID uint32, keyPath string) (*SoftKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	return LoadSoftFromBytes(networkID, kb)
+}
 
+// LoadSoftFromBytes loads the private key from bytes and creates the corresponding SoftKey.
+func LoadSoftFromBytes(networkID uint32, kb []byte) (*SoftKey, error) {
 	// in case, it's already encoded
 	k, err := NewSoft(networkID, WithPrivateKeyEncoded(string(kb)))
 	if err == nil {
@@ -271,6 +280,10 @@ func (m *SoftKey) Save(p string) error {
 
 func (m *SoftKey) P() []string {
 	return []string{m.pAddr}
+}
+
+func (m *SoftKey) X() []string {
+	return []string{m.xAddr}
 }
 
 func (m *SoftKey) Spends(outputs []*avax.UTXO, opts ...OpOption) (
