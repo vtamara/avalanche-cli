@@ -171,6 +171,5 @@ func BuildCustomVM(
 	if info.Mode()&0x0100 == 0 {
 		return fmt.Errorf("custom VM binary %s not executable. Expected build script to create an executable file", vmPath)
 	}
-	fmt.Println("ALL GOOD")
 	return nil
 }
