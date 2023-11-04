@@ -100,6 +100,9 @@ func deploy(clusterName, subnetName string, network models.Network) error {
 		return fmt.Errorf("inventory for cluster has no nodes")
 	}
 	ansibleHostID := ansibleHostIDs[0]
+	if err := ansible.RunAnsiblePlaybookSetupCLIFromSource(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), "create-devnets", ansibleHostID); err != nil {
+		return err
+	}
 	if err := ansible.RunAnsiblePlaybookExportSubnet(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), subnetPath, ansibleHostID); err != nil {
 		return err
 	}
@@ -107,6 +110,9 @@ func deploy(clusterName, subnetName string, network models.Network) error {
 		return err
 	}
 	if err := ansible.RunAnsiblePlaybookImportSubnet(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), subnetPath, ansibleHostID); err != nil {
+		return err
+	}
+	if err := subnetcmd.CallImportSubnet(subnetName, subnetPath); err != nil {
 		return err
 	}
 	return nil

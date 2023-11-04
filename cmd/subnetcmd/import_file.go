@@ -68,6 +68,10 @@ flag.`,
 	return cmd
 }
 
+func CallImportSubnet(subnetName, importPath string) error {
+	return exportSubnet(nil, []string{importPath})
+}
+
 func importSubnet(_ *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		importPath := args[0]
