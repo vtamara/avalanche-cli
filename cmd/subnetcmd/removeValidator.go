@@ -62,7 +62,7 @@ func removeValidator(_ *cobra.Command, args []string) error {
 		network = models.LocalNetwork
 	}
 
-	if network.Kind() == models.Undefined {
+	if network.Kind == models.Undefined {
 		networkStr, err := app.Prompt.CaptureList(
 			"Choose a network to remove a validator from",
 			[]string{models.Local.String(), models.Fuji.String(), models.Mainnet.String()},
@@ -93,7 +93,7 @@ func removeValidator(_ *cobra.Command, args []string) error {
 	}
 	subnetName := chains[0]
 
-	switch network.Kind() {
+	switch network.Kind {
 	case models.Local:
 		return removeFromLocal(subnetName)
 	case models.Fuji:
@@ -128,7 +128,7 @@ func removeValidator(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if subnetID == ids.Empty {
 		return errNoSubnetID
 	}
@@ -180,7 +180,7 @@ func removeValidator(_ *cobra.Command, args []string) error {
 	}
 
 	ux.Logger.PrintToUser("NodeID: %s", nodeID.String())
-	ux.Logger.PrintToUser("Network: %s", network.Kind().String())
+	ux.Logger.PrintToUser("Network: %s", network.Kind.String())
 	ux.Logger.PrintToUser("Inputs complete, issuing transaction to remove the specified validator...")
 
 	deployer := subnet.NewPublicDeployer(app, useLedger, kc, network)

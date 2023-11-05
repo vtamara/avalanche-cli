@@ -128,7 +128,7 @@ func joinCmd(_ *cobra.Command, args []string) error {
 		network = models.MainnetNetwork
 	}
 
-	if network.Kind() == models.Undefined {
+	if network.Kind == models.Undefined {
 		if joinElastic {
 			selectedNetwork, err := promptNetworkElastic(sc, "Which network is the elastic subnet that the node wants to join on?")
 			if err != nil {
@@ -163,7 +163,7 @@ func joinCmd(_ *cobra.Command, args []string) error {
 		network = models.LocalNetwork
 	}
 
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if subnetID == ids.Empty {
 		return errNoSubnetID
 	}
@@ -319,12 +319,12 @@ func writeAvagoChainConfigFiles(
 		dataDir = filepath.Join(home, ".avalanchego")
 	}
 
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if subnetID == ids.Empty {
 		return errNoSubnetID
 	}
 	subnetIDStr := subnetID.String()
-	blockchainID := sc.Networks[network.Kind().String()].BlockchainID
+	blockchainID := sc.Networks[network.Kind.String()].BlockchainID
 	if blockchainID == ids.Empty {
 		return errNoBlockchainID
 	}
@@ -393,7 +393,7 @@ func handleValidatorJoinElasticSubnet(sc models.Sidecar, network models.Network,
 		return ErrMutuallyExlusiveKeyLedger
 	}
 
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if os.Getenv(constants.SimulatePublicNetwork) != "" {
 		subnetID = sc.Networks[models.Local.String()].SubnetID
 	}
@@ -416,7 +416,7 @@ func handleValidatorJoinElasticSubnet(sc models.Sidecar, network models.Network,
 	endTime := start.Add(stakeDuration)
 	ux.Logger.PrintToUser("Inputs complete, issuing transaction for the provided validator to join elastic subnet...")
 	ux.Logger.PrintToUser("")
-	switch network.Kind() {
+	switch network.Kind {
 	case models.Local:
 		return handleValidatorJoinElasticSubnetLocal(sc, network, subnetName, nodeID, stakedTokenAmount, start, endTime)
 	case models.Fuji:
@@ -448,7 +448,7 @@ func handleValidatorJoinElasticSubnet(sc models.Sidecar, network models.Network,
 		return err
 	}
 	delegationFee := genesis.FujiParams.MinDelegationFee
-	if network.Kind() == models.Mainnet {
+	if network.Kind == models.Mainnet {
 		delegationFee = genesis.MainnetParams.MinDelegationFee
 	}
 	txID, err := deployer.AddPermissionlessValidator(subnetID, assetID, nodeID, stakedTokenAmount, uint64(start.Unix()), uint64(endTime.Unix()), recipientAddr, delegationFee, nil, nil)
@@ -480,7 +480,7 @@ func printAddPermissionlessValOutput(txID ids.ID, nodeID ids.NodeID, network mod
 	ux.Logger.PrintToUser("Validator successfully joined elastic subnet!")
 	ux.Logger.PrintToUser("TX ID: %s", txID.String())
 	ux.Logger.PrintToUser("NodeID: %s", nodeID.String())
-	ux.Logger.PrintToUser("Network: %s", network.Kind().String())
+	ux.Logger.PrintToUser("Network: %s", network.Kind.String())
 	ux.Logger.PrintToUser("Start time: %s", start.UTC().Format(constants.TimeParseLayout))
 	ux.Logger.PrintToUser("End time: %s", endTime.Format(constants.TimeParseLayout))
 	ux.Logger.PrintToUser("Stake Amount: %d", stakedTokenAmount)
@@ -489,7 +489,7 @@ func printAddPermissionlessValOutput(txID ids.ID, nodeID ids.NodeID, network mod
 func handleValidatorJoinElasticSubnetLocal(sc models.Sidecar, network models.Network, subnetName string, nodeID ids.NodeID,
 	stakedTokenAmount uint64, start time.Time, endTime time.Time,
 ) error {
-	if network.Kind() != models.Local {
+	if network.Kind != models.Local {
 		return errors.New("unsupported network")
 	}
 	if !checkIfSubnetIsElasticOnLocal(sc) {
@@ -573,7 +573,7 @@ func getLocalNetworkIDs() ([]string, error) {
 
 func promptNodeIDToAdd(subnetID ids.ID, isValidator bool, network models.Network) (ids.NodeID, error) {
 	if nodeIDStr == "" {
-		if network.Kind() != models.Local {
+		if network.Kind != models.Local {
 			promptStr := "Please enter the Node ID of the node that you would like to add to the elastic subnet"
 			if !isValidator {
 				promptStr = "Please enter the Node ID of the validator that you would like to delegate to"
@@ -627,7 +627,7 @@ func promptStakeAmount(subnetName string, isValidator bool, network models.Netwo
 	if stakeAmount > 0 {
 		return stakeAmount, nil
 	}
-	if network.Kind() == models.Local {
+	if network.Kind == models.Local {
 		esc, err := app.LoadElasticSubnetConfig(subnetName)
 		if err != nil {
 			return 0, err
@@ -693,7 +693,7 @@ func promptStakeAmount(subnetName string, isValidator bool, network models.Netwo
 func printJoinCmd(subnetID string, network models.Network, vmPath string) {
 	networkID, _ := network.NetworkID()
 	networkIDValue := ""
-	switch network.Kind() {
+	switch network.Kind {
 	case models.Local:
 		networkIDValue = "network-" + fmt.Sprint(networkID)
 	case models.Devnet:

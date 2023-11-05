@@ -72,7 +72,7 @@ func signTx(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	switch network.Kind() {
+	switch network.Kind {
 	case models.Fuji, models.Local:
 		if !useLedger && keyName == "" {
 			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "sign transaction", app.GetKeyDir())
@@ -95,7 +95,7 @@ func signTx(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if subnetID == ids.Empty {
 		return errNoSubnetID
 	}

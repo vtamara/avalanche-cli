@@ -57,7 +57,7 @@ func printValidators(_ *cobra.Command, args []string) error {
 		network = models.MainnetNetwork
 	}
 
-	if network.Kind() == models.Undefined {
+	if network.Kind == models.Undefined {
 		// no flag was set, prompt user
 		networkStr, err := app.Prompt.CaptureList(
 			"Choose a network to list validators from",
@@ -75,14 +75,14 @@ func printValidators(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	deployInfo, ok := sc.Networks[network.Kind().String()]
+	deployInfo, ok := sc.Networks[network.Kind.String()]
 	if !ok {
 		return errors.New("no deployment found for subnet")
 	}
 
 	subnetID := deployInfo.SubnetID
 
-	if network.Kind() == models.Local {
+	if network.Kind == models.Local {
 		return printLocalValidators(subnetID)
 	} else {
 		return printPublicValidators(subnetID, network)

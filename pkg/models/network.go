@@ -34,33 +34,29 @@ func (s NetworkKind) String() string {
 }
 
 type Network struct {
-	kind NetworkKind
-	id uint32
-	endpoint string
+	Kind     NetworkKind
+	Id       uint32
+	EndPoint string
 }
 
 var (
 	UndefinedNetwork = NewNetwork(Undefined, 0, "")
-	LocalNetwork = NewNetwork(Local, 0, "")
-	DevnetNetwork = NewNetwork(Devnet, 0, "")
-	FujiNetwork = NewNetwork(Fuji, 0, "")
-	MainnetNetwork = NewNetwork(Mainnet, 0, "")
+	LocalNetwork     = NewNetwork(Local, 0, "")
+	DevnetNetwork    = NewNetwork(Devnet, 0, "")
+	FujiNetwork      = NewNetwork(Fuji, 0, "")
+	MainnetNetwork   = NewNetwork(Mainnet, 0, "")
 )
 
 func NewNetwork(kind NetworkKind, id uint32, endpoint string) Network {
 	return Network{
-		kind: kind,
-		id: id,
-		endpoint: endpoint,
+		Kind:     kind,
+		Id:       id,
+		EndPoint: endpoint,
 	}
 }
 
-func (s Network) Kind() NetworkKind {
-	return s.kind
-}
-
 func (s Network) NetworkID() (uint32, error) {
-	switch s.kind {
+	switch s.Kind {
 	case Mainnet:
 		return avago_constants.MainnetID, nil
 	case Fuji:
@@ -68,13 +64,13 @@ func (s Network) NetworkID() (uint32, error) {
 	case Local:
 		return constants.LocalNetworkID, nil
 	case Devnet:
-		return s.id, nil
+		return s.Id, nil
 	}
 	return 0, fmt.Errorf("invalid network")
 }
 
 func (s Network) Endpoint() (string, error) {
-	switch s.kind {
+	switch s.Kind {
 	case Mainnet:
 		return constants.MainnetAPIEndpoint, nil
 	case Fuji:
@@ -82,7 +78,7 @@ func (s Network) Endpoint() (string, error) {
 	case Local:
 		return constants.LocalAPIEndpoint, nil
 	case Devnet:
-		return s.endpoint, nil
+		return s.EndPoint, nil
 	}
 	return "", fmt.Errorf("invalid network")
 }

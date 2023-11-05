@@ -128,7 +128,7 @@ func CallAddValidator(
 		return err
 	}
 
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if subnetID == ids.Empty {
 		return errNoSubnetID
 	}
@@ -184,7 +184,7 @@ func CallAddValidator(
 	}
 
 	ux.Logger.PrintToUser("NodeID: %s", nodeID.String())
-	ux.Logger.PrintToUser("Network: %s", network.Kind().String())
+	ux.Logger.PrintToUser("Network: %s", network.Kind.String())
 	ux.Logger.PrintToUser("Start time: %s", start.Format(constants.TimeParseLayout))
 	ux.Logger.PrintToUser("End time: %s", start.Add(duration).Format(constants.TimeParseLayout))
 	ux.Logger.PrintToUser("Weight: %d", weight)
@@ -217,7 +217,7 @@ func PromptDuration(start time.Time, network models.Network) (time.Duration, err
 		txt := "How long should this validator be validating? Enter a duration, e.g. 8760h. Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\""
 		var d time.Duration
 		var err error
-		if network.Kind() == models.Fuji {
+		if network.Kind == models.Fuji {
 			d, err = app.Prompt.CaptureFujiDuration(txt)
 		} else {
 			d, err = app.Prompt.CaptureMainnetDuration(txt)

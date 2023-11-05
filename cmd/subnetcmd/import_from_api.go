@@ -82,7 +82,7 @@ func importRunningSubnet(*cobra.Command, []string) error {
 		network = models.MainnetNetwork
 	}
 
-	if network.Kind() == models.Undefined {
+	if network.Kind == models.Undefined {
 		networkStr, err := app.Prompt.CaptureList(
 			"Choose a network to import from",
 			[]string{models.Fuji.String(), models.Mainnet.String()},
@@ -146,7 +146,7 @@ func importRunningSubnet(*cobra.Command, []string) error {
 	defer cancel()
 	options := []rpc.Option{}
 
-	ux.Logger.PrintToUser("Getting information from the %s network...", network.Kind().String())
+	ux.Logger.PrintToUser("Getting information from the %s network...", network.Kind.String())
 
 	txBytes, err := client.GetTx(ctx, blockchainID, options...)
 	if err != nil {
@@ -209,7 +209,7 @@ func importRunningSubnet(*cobra.Command, []string) error {
 		Name: subnetName,
 		VM:   vmType,
 		Networks: map[string]models.NetworkData{
-			network.Kind().String(): {
+			network.Kind.String(): {
 				SubnetID:     subnetID,
 				BlockchainID: blockchainID,
 			},

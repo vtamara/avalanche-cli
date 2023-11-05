@@ -46,7 +46,7 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if clusterConfig.Clusters[clusterName].Network.Kind() != models.Devnet {
+	if clusterConfig.Clusters[clusterName].Network.Kind != models.Devnet {
 		return fmt.Errorf("node deploy command must be applied to devnet clusters")
 	}
 
@@ -116,7 +116,7 @@ func deploy(clusterName, subnetName string, network models.Network) error {
 	if err != nil {
 		return err
 	}
-	networkData := sc.Networks[network.Kind().String()]
+	networkData := sc.Networks[network.Kind.String()]
 	if err := subnetcmd.PrintDeployResults(subnetName, networkData.SubnetID, networkData.BlockchainID); err != nil {
 		return err
 	}

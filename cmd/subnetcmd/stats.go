@@ -47,7 +47,7 @@ func stats(_ *cobra.Command, args []string) error {
 		network = models.MainnetNetwork
 	}
 
-	if network.Kind() == models.Undefined {
+	if network.Kind == models.Undefined {
 		networkStr, err := app.Prompt.CaptureList(
 			"Choose a network from which you want to get the statistics (this command only supports public networks)",
 			[]string{models.Fuji.String(), models.Mainnet.String()},
@@ -75,7 +75,7 @@ func stats(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if subnetID == ids.Empty {
 		return errors.New("no subnetID found for the provided subnet name; has this subnet actually been deployed to this network?")
 	}

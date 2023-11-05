@@ -203,7 +203,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 		network = models.LocalNetwork
 	}
 
-	if network.Kind() == models.Undefined {
+	if network.Kind == models.Undefined {
 		networkToUpgrade, err := selectNetworkToTransform(sc)
 		if err != nil {
 			return err
@@ -232,7 +232,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 		return ErrMutuallyExlusiveKeyLedger
 	}
 
-	subnetID := sc.Networks[network.Kind().String()].SubnetID
+	subnetID := sc.Networks[network.Kind.String()].SubnetID
 	if os.Getenv(constants.SimulatePublicNetwork) != "" {
 		subnetID = sc.Networks[models.Local.String()].SubnetID
 	}
@@ -240,7 +240,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 		return errNoSubnetID
 	}
 
-	if network.Kind() != models.Local {
+	if network.Kind != models.Local {
 		isAlreadyElastic, err := CheckSubnetIsElastic(subnetID, network)
 		if err != nil && err.Error() != subnetIsElasticError {
 			return err
@@ -271,7 +271,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 	}
 
 	tokenDenomination := 0
-	if network.Kind() != models.Local {
+	if network.Kind != models.Local {
 		if denominationFlag == -1 {
 			tokenDenomination, err = getTokenDenomination()
 			if err != nil {
@@ -288,7 +288,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 	}
 	elasticSubnetConfig.SubnetID = subnetID
 
-	switch network.Kind() {
+	switch network.Kind {
 	case models.Local:
 		return transformElasticSubnetLocal(sc, subnetName, tokenName, tokenSymbol, elasticSubnetConfig, cmd)
 	case models.Fuji:
@@ -394,7 +394,7 @@ func transformElasticSubnet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	flags := make(map[string]string)
-	flags[constants.Network] = network.Kind().String()
+	flags[constants.Network] = network.Kind.String()
 	if !isFullySigned {
 		flags[constants.MultiSig] = "multi-sig"
 	} else {
@@ -731,8 +731,8 @@ func checkIfTxHasOccurred(
 	if sc.ElasticSubnet == nil {
 		return false, ids.Empty
 	}
-	if sc.ElasticSubnet[network.Kind().String()].Txs != nil {
-		txID, ok := sc.ElasticSubnet[network.Kind().String()].Txs[txName]
+	if sc.ElasticSubnet[network.Kind.String()].Txs != nil {
+		txID, ok := sc.ElasticSubnet[network.Kind.String()].Txs[txName]
 		if ok {
 			return true, txID
 		}

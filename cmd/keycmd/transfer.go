@@ -239,7 +239,7 @@ func transferF(*cobra.Command, []string) error {
 		models.Mainnet: genesis.MainnetParams.TxFeeConfig.TxFee,
 		models.Local:   genesis.LocalParams.TxFeeConfig.TxFee,
 	}
-	fee := fees[network.Kind()]
+	fee := fees[network.Kind]
 
 	var kc keychain.Keychain
 	if keyName != "" {

@@ -149,7 +149,7 @@ func getChainsInSubnet(subnetName string) ([]string, error) {
 }
 
 func checkDefaultAddressNotInAlloc(network models.Network, chain string) error {
-	if network.Kind() != models.Local && network.Kind() != models.Devnet && os.Getenv(constants.SimulatePublicNetwork) == "" {
+	if network.Kind != models.Local && network.Kind != models.Devnet && os.Getenv(constants.SimulatePublicNetwork) == "" {
 		genesis, err := app.LoadEvmGenesis(chain)
 		if err != nil {
 			return err
@@ -282,7 +282,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if network.Kind() == models.Mainnet || os.Getenv(constants.SimulatePublicNetwork) != "" {
+	if network.Kind == models.Mainnet || os.Getenv(constants.SimulatePublicNetwork) != "" {
 		err = handleMainnetChainID(chain)
 		if err != nil {
 			return err
@@ -290,7 +290,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	}
 
 	// deploy based on chosen network
-	ux.Logger.PrintToUser("Deploying %s to %s", chains, network.Kind().String())
+	ux.Logger.PrintToUser("Deploying %s to %s", chains, network.Kind.String())
 	chainGenesis, err := app.LoadRawGenesis(chain, network)
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to validate genesis format: %w", err)
 	}
 
-	if network.Kind() == models.Local {
+	if network.Kind == models.Local {
 		app.Log.Debug("Deploy local")
 
 		genesisPath := app.GetGenesisPath(chain)
@@ -354,7 +354,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		flags := make(map[string]string)
-		flags[constants.Network] = network.Kind().String()
+		flags[constants.Network] = network.Kind.String()
 		utils.HandleTracking(cmd, app, flags)
 		return app.UpdateSidecarNetworks(&sidecar, network, subnetID, blockchainID)
 	}
@@ -388,7 +388,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		}
 		createSubnet = false
 	} else if sidecar.Networks != nil {
-		model, ok := sidecar.Networks[network.Kind().String()]
+		model, ok := sidecar.Networks[network.Kind.String()]
 		if ok {
 			if model.SubnetID != ids.Empty && model.BlockchainID == ids.Empty {
 				subnetID = model.SubnetID
@@ -507,7 +507,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	}
 
 	flags := make(map[string]string)
-	flags[constants.Network] = network.Kind().String()
+	flags[constants.Network] = network.Kind.String()
 	utils.HandleTracking(cmd, app, flags)
 
 	// update sidecar
@@ -535,7 +535,7 @@ func getControlKeys(network models.Network, useLedger bool, kc keychain.Keychain
 	} else {
 		creation = "Use fee-paying key"
 	}
-	if network.Kind() == models.Mainnet {
+	if network.Kind == models.Mainnet {
 		listOptions = []string{creation, custom}
 	} else {
 		listOptions = []string{creation, useAll, custom}
@@ -967,7 +967,7 @@ func GetNetworkFromCmdLineFlags(
 	}
 
 	// no flag was set, prompt user
-	if network.Kind() == models.Undefined {
+	if network.Kind == models.Undefined {
 		networkStr, err := app.Prompt.CaptureList(
 			"Choose a network for the operation",
 			utils.Map(supportedNetworkKinds, func(n models.NetworkKind) string { return n.String() }),
@@ -988,8 +988,8 @@ func GetNetworkFromCmdLineFlags(
 	supportedNetworksFlags := strings.Join(utils.Map(supportedNetworkKinds, func(n models.NetworkKind) string { return networkFlags[n] }), ", ")
 
 	// unsupported network
-	if !slices.Contains(supportedNetworkKinds, network.Kind()) {
-		return models.UndefinedNetwork, fmt.Errorf("network flag %s is not supported. use one of %s", networkFlags[network.Kind()], supportedNetworksFlags)
+	if !slices.Contains(supportedNetworkKinds, network.Kind) {
+		return models.UndefinedNetwork, fmt.Errorf("network flag %s is not supported. use one of %s", networkFlags[network.Kind], supportedNetworksFlags)
 	}
 
 	// not mutually exclusive flag selection
@@ -1019,13 +1019,13 @@ func GetKeychainFromCmdLineFlags(
 	}
 
 	switch {
-	case network.Kind() == models.Devnet:
+	case network.Kind == models.Devnet:
 		// going to just use ewoq atm
 		useEwoq = true
 		if keyName != "" || *useLedger {
 			return nil, ErrNonEwoqKeyOnDevnet
 		}
-	case network.Kind() == models.Local:
+	case network.Kind == models.Local:
 		// prompt the user if no key source was provided
 		if !*useLedger && !useEwoq && keyName == "" {
 			var err error
@@ -1034,7 +1034,7 @@ func GetKeychainFromCmdLineFlags(
 				return nil, err
 			}
 		}
-	case network.Kind() == models.Fuji:
+	case network.Kind == models.Fuji:
 		if useEwoq {
 			return nil, ErrEwoqKeyOnFuji
 		}
@@ -1046,7 +1046,7 @@ func GetKeychainFromCmdLineFlags(
 				return nil, err
 			}
 		}
-	case network.Kind() == models.Mainnet:
+	case network.Kind == models.Mainnet:
 		// mainnet requires ledger usage
 		if keyName != "" || useEwoq {
 			return nil, ErrStoredKeyOrEwoqOnMainnet
