@@ -117,6 +117,30 @@ so you can take your locally tested Subnet and deploy it on Fuji or Mainnet.`,
 	return cmd
 }
 
+func CallDeploy(
+	subnetName string,
+	lDeployLocal bool,
+	lDeployTestnet bool,
+	lDdeployMainnet bool,
+	lDeployDevnet bool,
+	lEndpoint string,
+	lSameControlKey bool,
+	lKeyName string,
+	lUseLedger bool,
+	lUseEwoq bool,
+) error {
+	deployLocal = lDeployLocal
+	deployTestnet = lDeployTestnet
+	deployMainnet = lDdeployMainnet
+	deployDevnet = lDeployDevnet
+	endpoint = lEndpoint
+	sameControlKey = lSameControlKey
+	keyName = lKeyName
+	useLedger = lUseLedger
+	useEwoq = lUseEwoq
+	return deploySubnet(nil, []string{subnetName})
+}
+
 func getChainsInSubnet(subnetName string) ([]string, error) {
 	subnets, err := os.ReadDir(app.GetSubnetDir())
 	if err != nil {

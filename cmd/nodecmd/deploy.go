@@ -77,7 +77,18 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("the Avalanche Go version of node(s) %s is incompatible with VM RPC version of %s", incompatibleNodes, subnetName)
 	}
 
-	if err := deploy(clusterName, subnetName, models.DevnetNetwork); err != nil {
+	if err := subnetcmd.CallDeploy(
+		subnetName,
+		false,
+		false,
+		false,
+		true,
+		clusterConfig.Clusters[clusterName].Network.Endpoint,
+		true,
+		"",
+		false,
+		true,
+	); err != nil {
 		return err
 	}
 	ux.Logger.PrintToUser("Subnet successfully deployed into devnet!")
