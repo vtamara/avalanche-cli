@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/ava-labs/avalanche-cli/pkg/binutils"
@@ -146,16 +145,10 @@ func joinCmd(_ *cobra.Command, args []string) error {
 		} else {
 			networkStr, err := app.Prompt.CaptureList(
 				"Choose a network to validate on (this command only supports public networks)",
-				[]string{models.Fuji.String(), models.Mainnet.String()},
+				[]string{models.Devnet.String(), models.Fuji.String(), models.Mainnet.String()},
 			)
 			if err != nil {
 				return err
-			}
-			// flag provided
-			networkStr = strings.Title(networkStr)
-			// as we are allowing a flag, we need to check if a supported network has been provided
-			if !(networkStr == models.Fuji.String() || networkStr == models.Mainnet.String()) {
-				return errors.New("unsupported network")
 			}
 			network = models.NetworkFromString(networkStr)
 		}
@@ -170,8 +163,6 @@ func joinCmd(_ *cobra.Command, args []string) error {
 		network = models.Local
 	}
 
-	networkLower := strings.ToLower(network.String())
-
 	subnetID := sc.Networks[network.String()].SubnetID
 	if subnetID == ids.Empty {
 		return errNoSubnetID
@@ -184,7 +175,7 @@ func joinCmd(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		printJoinCmd(subnetIDStr, networkLower, vmPath)
+		printJoinCmd(subnetIDStr, network, vmPath)
 		return nil
 	}
 
@@ -209,7 +200,7 @@ func joinCmd(_ *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			printJoinCmd(subnetIDStr, networkLower, vmPath)
+			printJoinCmd(subnetIDStr, network, vmPath)
 			return nil
 		}
 	}
@@ -302,7 +293,7 @@ func joinCmd(_ *cobra.Command, args []string) error {
 	if err := plugins.EditConfigFile(
 		app,
 		subnetIDStr,
-		networkLower,
+		network,
 		avagoConfigPath,
 		forceWrite,
 		subnetAvagoConfigFile,
@@ -699,7 +690,19 @@ func promptStakeAmount(subnetName string, isValidator bool, network models.Netwo
 	return initialSupply, nil
 }
 
-func printJoinCmd(subnetID string, networkID string, vmPath string) {
+func printJoinCmd(subnetID string, network models.Network, vmPath string) {
+	networkID, _ := network.NetworkID()
+	networkIDValue := ""
+	switch network {
+	case models.Local:
+		networkIDValue = "network-" + fmt.Sprint(networkID)
+	case models.Devnet:
+		networkIDValue = "network-" + fmt.Sprint(networkID)
+	case models.Fuji:
+		networkIDValue = "fuji"
+	case models.Mainnet:
+		networkIDValue = "mainnet"
+	}
 	msg := `
 To setup your node, you must do two things:
 
@@ -733,7 +736,7 @@ this tool will try to update the file automatically (make sure it can write to i
 After you update your config, you will need to restart your node for the changes to
 take effect.`
 
-	ux.Logger.PrintToUser(msg, vmPath, subnetID, networkID, subnetID, subnetID)
+	ux.Logger.PrintToUser(msg, vmPath, subnetID, networkIDValue, subnetID, subnetID)
 }
 
 func getAssetBalance(ctx context.Context, pClient platformvm.Client, addr string, assetID ids.ID) (uint64, error) {

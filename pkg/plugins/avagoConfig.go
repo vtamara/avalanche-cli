@@ -12,6 +12,7 @@ import (
 
 	"github.com/ava-labs/avalanche-cli/pkg/application"
 	"github.com/ava-labs/avalanche-cli/pkg/constants"
+	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 )
 
@@ -19,7 +20,7 @@ import (
 func EditConfigFile(
 	app *application.Avalanche,
 	subnetID string,
-	networkID string,
+	network models.Network,
 	configFile string,
 	forceWrite bool,
 	subnetAvagoConfigFile string,
@@ -104,7 +105,24 @@ func EditConfigFile(
 	// Banf.10 changes from "whitelisted-subnets" to "track-subnets"
 	delete(avagoConfig, "whitelisted-subnets")
 	avagoConfig["track-subnets"] = newVal
-	avagoConfig["network-id"] = networkID
+
+	networkID, err := network.NetworkID()
+	if err != nil {
+		return err
+	}
+
+	networkIDValue := ""
+	switch network {
+	case models.Local:
+		networkIDValue = "network-" + fmt.Sprint(networkID)
+	case models.Devnet:
+		networkIDValue = "network-" + fmt.Sprint(networkID)
+	case models.Fuji:
+		networkIDValue = "fuji"
+	case models.Mainnet:
+		networkIDValue = "mainnet"
+	}
+	avagoConfig["network-id"] = networkIDValue
 
 	writeBytes, err := json.MarshalIndent(avagoConfig, "", "  ")
 	if err != nil {
