@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ava-labs/avalanchego/utils/crypto/keychain"
 	"github.com/ava-labs/avalanchego/vms/platformvm/status"
 
 	"github.com/ava-labs/avalanche-cli/pkg/ansible"
@@ -76,9 +77,9 @@ func parseSubnetSyncOutput(filePath string) (string, error) {
 	return "", errors.New("unable to parse subnet sync status")
 }
 
-func addNodeAsSubnetValidator(nodeID, subnetName string, network models.Network, currentNodeIndex, nodeCount int) error {
+func addNodeAsSubnetValidator(network models.Network, kc keychain.Keychain, useLedger bool, nodeID, subnetName string, currentNodeIndex, nodeCount int) error {
 	ux.Logger.PrintToUser("Adding the node as a Subnet Validator...")
-	if err := subnetcmd.CallAddValidator(subnetName, nodeID, network); err != nil {
+	if err := subnetcmd.CallAddValidator(network, kc, useLedger, subnetName, nodeID); err != nil {
 		return err
 	}
 	ux.Logger.PrintToUser("Node %s successfully added as Subnet validator! (%d / %d)", nodeID, currentNodeIndex+1, nodeCount)
@@ -108,13 +109,13 @@ func getNodeSubnetSyncStatus(blockchainID, clusterName, ansibleNodeID string) (s
 	return subnetSyncStatus, nil
 }
 
-func waitForNodeToBePrimaryNetworkValidator(nodeID ids.NodeID) error {
+func waitForNodeToBePrimaryNetworkValidator(network models.Network, nodeID ids.NodeID) error {
 	ux.Logger.PrintToUser("Waiting for the node to start as a Primary Network Validator...")
 	// wait for 20 seconds because we set the start time to be in 20 seconds
 	time.Sleep(20 * time.Second)
 	// long polling: try up to 5 times
 	for i := 0; i < 5; i++ {
-		isValidator, err := checkNodeIsPrimaryNetworkValidator(nodeID, models.Fuji)
+		isValidator, err := checkNodeIsPrimaryNetworkValidator(nodeID, network)
 		if err != nil {
 			return err
 		}
@@ -129,10 +130,37 @@ func waitForNodeToBePrimaryNetworkValidator(nodeID ids.NodeID) error {
 func validateSubnet(_ *cobra.Command, args []string) error {
 	clusterName := args[0]
 	subnetName := args[1]
+
 	if err := checkCluster(clusterName); err != nil {
 		return err
 	}
-	err := setupAnsible(clusterName)
+	if _, err := subnetcmd.ValidateSubnetNameAndGetChains([]string{subnetName}); err != nil {
+		return err
+	}
+
+	network, err := subnetcmd.GetNetworkFromCmdLineFlags(
+		false,
+		deployDevnet,
+		deployTestnet,
+		deployMainnet,
+		[]models.Network{models.Devnet, models.Fuji},
+	)
+	if err != nil {
+		return err
+	}
+	kc, err := subnetcmd.GetKeychainFromCmdLineFlags(
+		"pay transaction fees",
+		network,
+		keyName,
+		useEwoq,
+		&useLedger,
+		ledgerAddresses,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = setupAnsible(clusterName)
 	if err != nil {
 		return err
 	}
@@ -143,14 +171,11 @@ func validateSubnet(_ *cobra.Command, args []string) error {
 	if len(notBootstrappedNodes) > 0 {
 		return fmt.Errorf("node(s) %s are not bootstrapped yet, please try again later", notBootstrappedNodes)
 	}
-	if _, err = subnetcmd.ValidateSubnetNameAndGetChains([]string{subnetName}); err != nil {
-		return err
-	}
 	sc, err := app.LoadSidecar(subnetName)
 	if err != nil {
 		return err
 	}
-	blockchainID := sc.Networks[models.Fuji.String()].BlockchainID
+	blockchainID := sc.Networks[network.String()].BlockchainID
 	if blockchainID == ids.Empty {
 		return ErrNoBlockchainID
 	}
@@ -207,7 +232,7 @@ func validateSubnet(_ *cobra.Command, args []string) error {
 			nodeErrors = append(nodeErrors, err)
 			continue
 		}
-		addedNodeAsPrimaryNetworkValidator, err := addNodeAsPrimaryNetworkValidator(nodeID, models.Fuji, i, clusterNodeID)
+		addedNodeAsPrimaryNetworkValidator, err := addNodeAsPrimaryNetworkValidator(network, kc, useLedger, nodeID, i, clusterNodeID)
 		if err != nil {
 			ux.Logger.PrintToUser("Failed to add node %s as subnet validator due to %s", ansibleNodeID, err.Error())
 			failedNodes = append(failedNodes, ansibleNodeID)
@@ -215,14 +240,14 @@ func validateSubnet(_ *cobra.Command, args []string) error {
 			continue
 		}
 		if addedNodeAsPrimaryNetworkValidator {
-			if err := waitForNodeToBePrimaryNetworkValidator(nodeID); err != nil {
+			if err := waitForNodeToBePrimaryNetworkValidator(network, nodeID); err != nil {
 				ux.Logger.PrintToUser("Failed to add node %s as subnet validator due to %s", ansibleNodeID, err.Error())
 				failedNodes = append(failedNodes, ansibleNodeID)
 				nodeErrors = append(nodeErrors, err)
 				continue
 			}
 		}
-		err = addNodeAsSubnetValidator(nodeIDStr, subnetName, models.Fuji, i, len(ansibleNodeIDs))
+		err = addNodeAsSubnetValidator(network, kc, useLedger, nodeIDStr, subnetName, i, len(ansibleNodeIDs))
 		if err != nil {
 			ux.Logger.PrintToUser("Failed to add node %s as subnet validator due to %s", ansibleNodeID, err.Error())
 			failedNodes = append(failedNodes, ansibleNodeID)

@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ava-labs/avalanche-cli/pkg/prompts"
 	"github.com/ava-labs/avalanchego/utils/crypto/bls"
+	"github.com/ava-labs/avalanchego/utils/crypto/keychain"
 	"github.com/ava-labs/avalanchego/vms/platformvm/signer"
 
 	"github.com/ava-labs/avalanchego/genesis"
@@ -116,42 +116,20 @@ func GetMinStakingAmount(network models.Network) (uint64, error) {
 	return minValStake, nil
 }
 
-func joinAsPrimaryNetworkValidator(nodeID ids.NodeID, network models.Network, nodeIndex int, signingKeyPath string, nodeCmd bool) error {
+func joinAsPrimaryNetworkValidator(
+	network models.Network,
+	kc keychain.Keychain,
+	useLedger bool,
+	nodeID ids.NodeID,
+	nodeIndex int,
+	signingKeyPath string,
+	nodeCmd bool,
+) error {
 	ux.Logger.PrintToUser(fmt.Sprintf("Adding node %s as a Primary Network Validator...", nodeID.String()))
 	var (
 		start time.Time
 		err   error
 	)
-	switch {
-	case deployTestnet:
-		network = models.Fuji
-	case deployMainnet:
-		network = models.Mainnet
-	}
-	if len(ledgerAddresses) > 0 {
-		useLedger = true
-	}
-
-	if useLedger && keyName != "" {
-		return ErrMutuallyExlusiveKeyLedger
-	}
-
-	switch network {
-	case models.Fuji:
-		if !useLedger && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "pay transaction fees", app.GetKeyDir())
-			if err != nil {
-				return err
-			}
-		}
-	case models.Mainnet:
-		useLedger = true
-		if keyName != "" {
-			return ErrStoredKeyOnMainnet
-		}
-	default:
-		return errors.New("unsupported network")
-	}
 	minValStake, err := GetMinStakingAmount(network)
 	if err != nil {
 		return err
@@ -170,10 +148,6 @@ func joinAsPrimaryNetworkValidator(nodeID ids.NodeID, network models.Network, no
 		return err
 	}
 
-	kc, err := subnetcmd.GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
-	if err != nil {
-		return err
-	}
 	recipientAddr := kc.Addresses().List()[0]
 	deployer := subnet.NewPublicDeployer(app, useLedger, kc, network)
 	PrintNodeJoinPrimaryNetworkOutput(nodeID, weight, network, start)
@@ -182,6 +156,9 @@ func joinAsPrimaryNetworkValidator(nodeID ids.NodeID, network models.Network, no
 	delegationFee := genesis.FujiParams.MinDelegationFee
 	if network == models.Mainnet {
 		delegationFee = genesis.MainnetParams.MinDelegationFee
+	}
+	if network == models.Devnet {
+		delegationFee = genesis.LocalParams.MinDelegationFee
 	}
 	blsKeyBytes, err := os.ReadFile(signingKeyPath)
 	if err != nil {
@@ -199,6 +176,9 @@ func PromptWeightPrimaryNetwork(network models.Network) (uint64, error) {
 	defaultStake := genesis.FujiParams.MinValidatorStake
 	if network == models.Mainnet {
 		defaultStake = genesis.MainnetParams.MinValidatorStake
+	}
+	if network == models.Devnet {
+		defaultStake = genesis.LocalParams.MinValidatorStake
 	}
 	defaultWeight := fmt.Sprintf("Default (%s)", convertNanoAvaxToAvaxString(defaultStake))
 	txt := "What stake weight would you like to assign to the validator?"
@@ -355,14 +335,21 @@ func checkNodeIsPrimaryNetworkValidator(nodeID ids.NodeID, network models.Networ
 
 // addNodeAsPrimaryNetworkValidator returns bool if node is added as primary network validator
 // as it impacts the output in adding node as subnet validator in the next steps
-func addNodeAsPrimaryNetworkValidator(nodeID ids.NodeID, network models.Network, nodeIndex int, instanceID string) (bool, error) {
+func addNodeAsPrimaryNetworkValidator(
+	network models.Network,
+	kc keychain.Keychain,
+	useLedger bool,
+	nodeID ids.NodeID,
+	nodeIndex int,
+	instanceID string,
+) (bool, error) {
 	isValidator, err := checkNodeIsPrimaryNetworkValidator(nodeID, network)
 	if err != nil {
 		return false, err
 	}
 	if !isValidator {
 		signingKeyPath := app.GetNodeBLSSecretKeyPath(instanceID)
-		if err = joinAsPrimaryNetworkValidator(nodeID, network, nodeIndex, signingKeyPath, true); err != nil {
+		if err = joinAsPrimaryNetworkValidator(network, kc, useLedger, nodeID, nodeIndex, signingKeyPath, true); err != nil {
 			return false, err
 		}
 		ux.Logger.PrintToUser(fmt.Sprintf("Node %s successfully added as Primary Network validator!", nodeID.String()))
@@ -376,7 +363,30 @@ func validatePrimaryNetwork(_ *cobra.Command, args []string) error {
 	if err := checkCluster(clusterName); err != nil {
 		return err
 	}
-	err := setupAnsible(clusterName)
+
+	network, err := subnetcmd.GetNetworkFromCmdLineFlags(
+		false,
+		deployDevnet,
+		deployTestnet,
+		deployMainnet,
+		[]models.Network{models.Devnet, models.Fuji, models.Mainnet},
+	)
+	if err != nil {
+		return err
+	}
+	kc, err := subnetcmd.GetKeychainFromCmdLineFlags(
+		"pay transaction fees",
+		network,
+		keyName,
+		useEwoq,
+		&useLedger,
+		ledgerAddresses,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = setupAnsible(clusterName)
 	if err != nil {
 		return err
 	}
@@ -421,7 +431,7 @@ func validatePrimaryNetwork(_ *cobra.Command, args []string) error {
 			nodeErrors = append(nodeErrors, err)
 			continue
 		}
-		_, err = addNodeAsPrimaryNetworkValidator(nodeID, models.Fuji, i, clusterNodeID)
+		_, err = addNodeAsPrimaryNetworkValidator(network, kc, useLedger, nodeID, i, clusterNodeID)
 		if err != nil {
 			ux.Logger.PrintToUser("Failed to add node %s as Primary Network validator due to %s", ansibleNodeID, err)
 			failedNodes = append(failedNodes, ansibleNodeID)

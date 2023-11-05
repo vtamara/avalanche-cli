@@ -18,6 +18,7 @@ import (
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/ava-labs/avalanchego/ids"
 	avago_constants "github.com/ava-labs/avalanchego/utils/constants"
+	"github.com/ava-labs/avalanchego/utils/crypto/keychain"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/spf13/cobra"
 )
@@ -68,7 +69,13 @@ Testnet or Mainnet.`,
 	return cmd
 }
 
-func CallAddValidator(subnetName, nodeID string, network models.Network) error {
+func CallAddValidator(
+	network models.Network,
+	kc keychain.Keychain,
+	useLedger bool,
+	subnetName string,
+	nodeID string,
+) error {
 	switch network {
 	case models.Mainnet:
 		deployMainnet = true
