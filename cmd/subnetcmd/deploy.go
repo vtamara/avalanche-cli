@@ -315,19 +315,10 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to validate genesis format: %w", err)
 	}
 
-	genesisPath := app.GetGenesisPath(chain)
-
-	if len(ledgerAddresses) > 0 {
-		useLedger = true
-	}
-
-	if !flags.EnsureMutuallyExclusive([]bool{useLedger, useEwoq, keyName != ""}) {
-		return ErrMutuallyExlusiveKeySource
-	}
-
-	switch network {
-	case models.Local:
+	if network == models.Local {
 		app.Log.Debug("Deploy local")
+
+		genesisPath := app.GetGenesisPath(chain)
 
 		// copy vm binary to the expected location, first downloading it if necessary
 		var vmBin string
@@ -364,44 +355,25 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		flags[constants.Network] = network.String()
 		utils.HandleTracking(cmd, app, flags)
 		return app.UpdateSidecarNetworks(&sidecar, network, subnetID, blockchainID)
+	}
 
-	case models.Devnet:
-		if !useLedger && !useEwoq && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
-			if err != nil {
-				return err
-			}
-		}
+	// from here on we are assuming a public deploy
 
-	case models.Fuji:
-		if !useLedger && !useEwoq && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
-			if err != nil {
-				return err
-			}
-		}
-
-	case models.Mainnet:
-		useLedger = true
-		if keyName != "" || useEwoq {
-			return ErrStoredKeyOrEwoqOnMainnet
-		}
-
-	default:
-		return errors.New("not implemented")
+	kc, err := GetKeychainFromCmdLineFlags(
+		"pay transaction fees",
+		network,
+		keyName,
+		useEwoq,
+		&useLedger,
+		ledgerAddresses,
+	)
+	if err != nil {
+		return err
 	}
 
 	// used in E2E to simulate public network execution paths on a local network
 	if os.Getenv(constants.SimulatePublicNetwork) != "" {
 		network = models.Local
-	}
-
-	// from here on we are assuming a public deploy
-
-	// get keychain accessor
-	kc, err := GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
-	if err != nil {
-		return err
 	}
 
 	createSubnet := true
@@ -1031,24 +1003,24 @@ func GetKeychainFromCmdLineFlags(
 	network models.Network,
 	keyName string,
 	useEwoq bool,
-	useLedger bool,
+	useLedger *bool,
 	ledgerAddresses []string,
 ) (keychain.Keychain, error) {
 	// set ledger usage flag if ledger addresses are given
 	if len(ledgerAddresses) > 0 {
-		useLedger = true
+		*useLedger = true
 	}
 
 	// check mutually exclusive flags
-	if !flags.EnsureMutuallyExclusive([]bool{useLedger, useEwoq, keyName != ""}) {
+	if !flags.EnsureMutuallyExclusive([]bool{*useLedger, useEwoq, keyName != ""}) {
 		return nil, ErrMutuallyExlusiveKeySource
 	}
 
 	// prompt the user if not on mainnet and no key source was provided
 	if network != models.Mainnet {
-		if !useLedger && !useEwoq && keyName == "" {
+		if !*useLedger && !useEwoq && keyName == "" {
 			var err error
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, keychainGoal, app.GetKeyDir())
+			*useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, keychainGoal, app.GetKeyDir())
 			if err != nil {
 				return nil, err
 			}
@@ -1056,7 +1028,7 @@ func GetKeychainFromCmdLineFlags(
 	} else {
 		// mainnet requires ledger usage
 		if network == models.Mainnet {
-			useLedger = true
+			*useLedger = true
 			if keyName != "" || useEwoq {
 				return nil, ErrStoredKeyOrEwoqOnMainnet
 			}
@@ -1069,5 +1041,5 @@ func GetKeychainFromCmdLineFlags(
 	}
 
 	// get keychain accessor
-	return GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
+	return GetKeychain(useEwoq, *useLedger, ledgerAddresses, keyName, network)
 }
