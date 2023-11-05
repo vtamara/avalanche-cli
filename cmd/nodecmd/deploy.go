@@ -6,8 +6,6 @@ import (
 	"fmt"
 
 	"github.com/ava-labs/avalanche-cli/cmd/subnetcmd"
-	"github.com/ava-labs/avalanche-cli/pkg/ansible"
-	"github.com/ava-labs/avalanche-cli/pkg/constants"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/spf13/cobra"
@@ -92,44 +90,5 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 		return err
 	}
 	ux.Logger.PrintToUser("Subnet successfully deployed into devnet!")
-	return nil
-}
-
-func deploy(clusterName, subnetName string, network models.Network) error {
-	subnetPath := "/tmp/" + subnetName + constants.ExportSubnetSuffix
-	if err := subnetcmd.CallExportSubnet(subnetName, subnetPath, network); err != nil {
-		return err
-	}
-	ansibleHostIDs, err := ansible.GetAnsibleHostsFromInventory(app.GetAnsibleInventoryDirPath(clusterName))
-	if err != nil {
-		return err
-	}
-	if len(ansibleHostIDs) == 0 {
-		return fmt.Errorf("inventory for cluster has no nodes")
-	}
-	ansibleHostID := ansibleHostIDs[0]
-	if err := ansible.RunAnsiblePlaybookSetupCLIFromSource(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), "create-devnets", ansibleHostID); err != nil {
-		return err
-	}
-	if err := ansible.RunAnsiblePlaybookExportSubnet(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), subnetPath, ansibleHostID); err != nil {
-		return err
-	}
-	if err = ansible.RunAnsiblePlaybookDeploySubnet(app.GetAnsibleDir(), subnetName, subnetPath, app.GetAnsibleInventoryDirPath(clusterName), ansibleHostID); err != nil {
-		return err
-	}
-	if err := ansible.RunAnsiblePlaybookImportSubnet(app.GetAnsibleDir(), app.GetAnsibleInventoryDirPath(clusterName), subnetPath, ansibleHostID); err != nil {
-		return err
-	}
-	if err := subnetcmd.CallImportSubnet(subnetName, subnetPath, true); err != nil {
-		return err
-	}
-	sc, err := app.LoadSidecar(subnetName)
-	if err != nil {
-		return err
-	}
-	networkData := sc.Networks[network.Kind.String()]
-	if err := subnetcmd.PrintDeployResults(subnetName, networkData.SubnetID, networkData.BlockchainID); err != nil {
-		return err
-	}
 	return nil
 }
