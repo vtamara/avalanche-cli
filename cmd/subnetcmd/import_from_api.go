@@ -137,11 +137,7 @@ func importRunningSubnet(*cobra.Command, []string) error {
 		}
 	}
 
-	pubAPI, err := network.Endpoint()
-	if err != nil {
-		return err
-	}
-	client := platformvm.NewClient(pubAPI)
+	client := platformvm.NewClient(network.Endpoint)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.RequestTimeout)
 	defer cancel()
 	options := []rpc.Option{}

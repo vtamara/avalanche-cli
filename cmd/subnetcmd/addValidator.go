@@ -74,6 +74,7 @@ func addValidator(_ *cobra.Command, args []string) error {
 		deployDevnet,
 		deployTestnet,
 		deployMainnet,
+		endpoint,
 		[]models.NetworkKind{models.Local, models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {
@@ -238,13 +239,9 @@ func PromptDuration(start time.Time, network models.Network) (time.Duration, err
 }
 
 func getMaxValidationTime(network models.Network, nodeID ids.NodeID, startTime time.Time) (time.Duration, error) {
-	uri, err := network.Endpoint()
-	if err != nil {
-		return 0, err
-	}
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, constants.RequestTimeout)
-	platformCli := platformvm.NewClient(uri)
+	platformCli := platformvm.NewClient(network.Endpoint)
 	vs, err := platformCli.GetCurrentValidators(ctx, avago_constants.PrimaryNetworkID, nil)
 	cancel()
 	if err != nil {

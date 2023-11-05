@@ -460,16 +460,12 @@ func (d *PublicDeployer) Sign(
 
 func (d *PublicDeployer) loadWallet(preloadTxs ...ids.ID) (primary.Wallet, error) {
 	ctx := context.Background()
-	api, err := d.network.Endpoint()
-	if err != nil {
-		return nil, err
-	}
 	// filter out ids.Empty txs
 	filteredTxs := utils.Filter(preloadTxs, func(e ids.ID) bool { return e != ids.Empty })
 	wallet, err := primary.MakeWallet(
 		ctx,
 		&primary.WalletConfig{
-			URI:              api,
+			URI:              d.network.Endpoint,
 			AVAXKeychain:     d.kc,
 			EthKeychain:      secp256k1fx.NewKeychain(),
 			PChainTxsToFetch: set.Of(filteredTxs...),
@@ -740,11 +736,7 @@ func (d *PublicDeployer) checkWalletHasSubnetAuthAddresses(subnetAuth []ids.Shor
 }
 
 func IsSubnetValidator(subnetID ids.ID, nodeID ids.NodeID, network models.Network) (bool, error) {
-	apiURL, err := network.Endpoint()
-	if err != nil {
-		return false, err
-	}
-	pClient := platformvm.NewClient(apiURL)
+	pClient := platformvm.NewClient(network.Endpoint)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.E2ERequestTimeout)
 	defer cancel()
 
@@ -757,11 +749,7 @@ func IsSubnetValidator(subnetID ids.ID, nodeID ids.NodeID, network models.Networ
 }
 
 func GetPublicSubnetValidators(subnetID ids.ID, network models.Network) ([]platformvm.ClientPermissionlessValidator, error) {
-	apiURL, err := network.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	pClient := platformvm.NewClient(apiURL)
+	pClient := platformvm.NewClient(network.Endpoint)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.E2ERequestTimeout)
 	defer cancel()
 

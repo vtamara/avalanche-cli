@@ -463,11 +463,7 @@ func handleValidatorJoinElasticSubnet(sc models.Sidecar, network models.Network,
 }
 
 func getSubnetAssetID(subnetID ids.ID, network models.Network) (ids.ID, error) {
-	api, err := network.Endpoint()
-	if err != nil {
-		return ids.Empty, err
-	}
-	pClient := platformvm.NewClient(api)
+	pClient := platformvm.NewClient(network.Endpoint)
 	ctx := context.Background()
 	assetID, err := pClient.GetStakingAssetID(ctx, subnetID)
 	if err != nil {
@@ -691,13 +687,12 @@ func promptStakeAmount(subnetName string, isValidator bool, network models.Netwo
 }
 
 func printJoinCmd(subnetID string, network models.Network, vmPath string) {
-	networkID, _ := network.NetworkID()
 	networkIDValue := ""
 	switch network.Kind {
 	case models.Local:
-		networkIDValue = "network-" + fmt.Sprint(networkID)
+		networkIDValue = "network-" + fmt.Sprint(network.Id)
 	case models.Devnet:
-		networkIDValue = "network-" + fmt.Sprint(networkID)
+		networkIDValue = "network-" + fmt.Sprint(network.Id)
 	case models.Fuji:
 		networkIDValue = "fuji"
 	case models.Mainnet:

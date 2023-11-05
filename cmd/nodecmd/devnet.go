@@ -65,6 +65,10 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	ansibleHosts, err := ansible.GetHostMapfromAnsibleInventory(app.GetAnsibleInventoryDirPath(clusterName))
+	if err != nil {
+		return err
+	}
 	cloudHostIDs, err := utils.MapWithError(ansibleHostIDs, func(s string) (string, error) { _, o, err := models.HostAnsibleIDToCloudID(s); return o, err })
 	if err != nil {
 		return err
@@ -78,13 +82,10 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 	}
 
 	network := models.DevnetNetwork
-	networkID, err := network.NetworkID()
-	if err != nil {
-		return err
-	}
+	network.Endpoint = "http://" + ansibleHosts[ansibleHostIDs[0]].IP + ":9650"
 	useEwoq := true
 
-	k, err := key.NewSoft(networkID)
+	k, err := key.NewSoft(network.Id)
 	if err != nil {
 		return err
 	}
@@ -95,13 +96,13 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 		return err
 	}
 	walletAddr := kc.Addresses().List()[0]
-	hrp := key.GetHRP(networkID)
+	hrp := key.GetHRP(network.Id)
 	walletAddrStr, err := address.Format("X", hrp, walletAddr[:])
 	if err != nil {
 		return err
 	}
 
-	genesisBytes, err := generateCustomGenesis(networkID, walletAddrStr, stakingAddrStr, nodeIDs)
+	genesisBytes, err := generateCustomGenesis(network.Id, walletAddrStr, stakingAddrStr, nodeIDs)
 	if err != nil {
 		return err
 	}
@@ -111,16 +112,12 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	ansibleHosts, err := ansible.GetHostMapfromAnsibleInventory(app.GetAnsibleInventoryDirPath(clusterName))
-	if err != nil {
-		return err
-	}
 	bootstrapIPs := []string{}
 	bootstrapIDs := []string{}
 	for i, ansibleHostID := range ansibleHostIDs {
 		cloudHostID := cloudHostIDs[i]
 		confMap := map[string]interface{}{}
-		confMap[config.NetworkNameKey] = networkID
+		confMap[config.NetworkNameKey] = network.Id
 		confMap[config.PublicIPKey] = ansibleHosts[ansibleHostID].IP
 		confMap[config.BootstrapIDsKey] = strings.Join(bootstrapIDs, ",")
 		confMap[config.BootstrapIPsKey] = strings.Join(bootstrapIPs, ",")

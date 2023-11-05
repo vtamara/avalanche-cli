@@ -3,8 +3,6 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/ava-labs/avalanche-cli/pkg/constants"
 	avago_constants "github.com/ava-labs/avalanchego/utils/constants"
 )
@@ -36,63 +34,35 @@ func (s NetworkKind) String() string {
 type Network struct {
 	Kind     NetworkKind
 	Id       uint32
-	EndPoint string
+	Endpoint string
 }
 
 var (
 	UndefinedNetwork = NewNetwork(Undefined, 0, "")
-	LocalNetwork     = NewNetwork(Local, 0, "")
-	DevnetNetwork    = NewNetwork(Devnet, 0, "")
-	FujiNetwork      = NewNetwork(Fuji, 0, "")
-	MainnetNetwork   = NewNetwork(Mainnet, 0, "")
+	LocalNetwork     = NewNetwork(Local, constants.LocalNetworkID, constants.LocalAPIEndpoint)
+	DevnetNetwork    = NewNetwork(Devnet, constants.DevnetNetworkID, constants.DevnetAPIEndpoint)
+	FujiNetwork      = NewNetwork(Fuji, avago_constants.FujiID, constants.FujiAPIEndpoint)
+	MainnetNetwork   = NewNetwork(Mainnet, avago_constants.MainnetID, constants.MainnetAPIEndpoint)
 )
 
 func NewNetwork(kind NetworkKind, id uint32, endpoint string) Network {
 	return Network{
 		Kind:     kind,
 		Id:       id,
-		EndPoint: endpoint,
+		Endpoint: endpoint,
 	}
-}
-
-func (s Network) NetworkID() (uint32, error) {
-	switch s.Kind {
-	case Mainnet:
-		return avago_constants.MainnetID, nil
-	case Fuji:
-		return avago_constants.FujiID, nil
-	case Local:
-		return constants.LocalNetworkID, nil
-	case Devnet:
-		return s.Id, nil
-	}
-	return 0, fmt.Errorf("invalid network")
-}
-
-func (s Network) Endpoint() (string, error) {
-	switch s.Kind {
-	case Mainnet:
-		return constants.MainnetAPIEndpoint, nil
-	case Fuji:
-		return constants.FujiAPIEndpoint, nil
-	case Local:
-		return constants.LocalAPIEndpoint, nil
-	case Devnet:
-		return s.EndPoint, nil
-	}
-	return "", fmt.Errorf("invalid network")
 }
 
 func NetworkFromString(s string) Network {
 	switch s {
 	case Mainnet.String():
-		return NewNetwork(Mainnet, 0, "")
+		return MainnetNetwork
 	case Fuji.String():
-		return NewNetwork(Fuji, 0, "")
+		return FujiNetwork
 	case Local.String():
-		return NewNetwork(Local, 0, "")
+		return LocalNetwork
 	case Devnet.String():
-		return NewNetwork(Devnet, 0, "")
+		return DevnetNetwork
 	}
 	return UndefinedNetwork
 }
@@ -100,13 +70,13 @@ func NetworkFromString(s string) Network {
 func NetworkFromNetworkID(networkID uint32) Network {
 	switch networkID {
 	case avago_constants.MainnetID:
-		return NewNetwork(Mainnet, 0, "")
+		return MainnetNetwork
 	case avago_constants.FujiID:
-		return NewNetwork(Fuji, 0, "")
+		return FujiNetwork
 	case constants.LocalNetworkID:
-		return NewNetwork(Local, 0, "")
+		return LocalNetwork
 	case constants.DevnetNetworkID:
-		return NewNetwork(Devnet, 0, "")
+		return DevnetNetwork
 	}
 	return UndefinedNetwork
 }

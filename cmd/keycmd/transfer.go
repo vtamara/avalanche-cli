@@ -175,10 +175,7 @@ func transferF(*cobra.Command, []string) error {
 		network = models.NetworkFromString(networkStr)
 	}
 
-	networkID, err := network.NetworkID()
-	if err != nil {
-		return err
-	}
+	var err error
 
 	if !send && !receive {
 		option, err := app.Prompt.CaptureList(
@@ -244,7 +241,7 @@ func transferF(*cobra.Command, []string) error {
 	var kc keychain.Keychain
 	if keyName != "" {
 		keyPath := app.GetKeyPath(keyName)
-		sk, err := key.LoadSoft(networkID, keyPath)
+		sk, err := key.LoadSoft(network.Id, keyPath)
 		if err != nil {
 			return err
 		}
@@ -275,7 +272,7 @@ func transferF(*cobra.Command, []string) error {
 		}
 	} else {
 		receiverAddr = kc.Addresses().List()[0]
-		receiverAddrStr, err = address.Format("P", key.GetHRP(networkID), receiverAddr[:])
+		receiverAddrStr, err = address.Format("P", key.GetHRP(network.Id), receiverAddr[:])
 		if err != nil {
 			return err
 		}
@@ -285,7 +282,7 @@ func transferF(*cobra.Command, []string) error {
 	ux.Logger.PrintToUser("this operation is going to:")
 	if send {
 		addr := kc.Addresses().List()[0]
-		addrStr, err := address.Format("P", key.GetHRP(networkID), addr[:])
+		addrStr, err := address.Format("P", key.GetHRP(network.Id), addr[:])
 		if err != nil {
 			return err
 		}
@@ -311,11 +308,6 @@ func transferF(*cobra.Command, []string) error {
 		}
 	}
 
-	apiEndpoint, err := network.Endpoint()
-	if err != nil {
-		return err
-	}
-
 	to := secp256k1fx.OutputOwners{
 		Threshold: 1,
 		Addrs:     []ids.ShortID{receiverAddr},
@@ -325,7 +317,7 @@ func transferF(*cobra.Command, []string) error {
 		wallet, err := primary.MakeWallet(
 			context.Background(),
 			&primary.WalletConfig{
-				URI:          apiEndpoint,
+				URI:          network.Endpoint,
 				AVAXKeychain: kc,
 				EthKeychain:  secp256k1fx.NewKeychain(),
 			},
@@ -353,7 +345,7 @@ func transferF(*cobra.Command, []string) error {
 			wallet, err := primary.MakeWallet(
 				context.Background(),
 				&primary.WalletConfig{
-					URI:          apiEndpoint,
+					URI:          network.Endpoint,
 					AVAXKeychain: kc,
 					EthKeychain:  secp256k1fx.NewKeychain(),
 				},
@@ -377,7 +369,7 @@ func transferF(*cobra.Command, []string) error {
 			wallet, err := primary.MakeWallet(
 				context.Background(),
 				&primary.WalletConfig{
-					URI:          apiEndpoint,
+					URI:          network.Endpoint,
 					AVAXKeychain: kc,
 					EthKeychain:  secp256k1fx.NewKeychain(),
 				},
@@ -409,7 +401,7 @@ func transferF(*cobra.Command, []string) error {
 			wallet, err := primary.MakeWallet(
 				context.Background(),
 				&primary.WalletConfig{
-					URI:          apiEndpoint,
+					URI:          network.Endpoint,
 					AVAXKeychain: kc,
 					EthKeychain:  secp256k1fx.NewKeychain(),
 				},

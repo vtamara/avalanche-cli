@@ -705,14 +705,10 @@ func getTokenDenomination() (int, error) {
 }
 
 func CheckSubnetIsElastic(subnetID ids.ID, network models.Network) (bool, error) {
-	apiURL, err := network.Endpoint()
-	if err != nil {
-		return false, err
-	}
-	pClient := platformvm.NewClient(apiURL)
+	pClient := platformvm.NewClient(network.Endpoint)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.E2ERequestTimeout)
 	defer cancel()
-	_, _, err = pClient.GetCurrentSupply(ctx, subnetID)
+	_, _, err := pClient.GetCurrentSupply(ctx, subnetID)
 	if err != nil {
 		// if subnet is already elastic it will return "not found" error
 		if strings.Contains(err.Error(), "not found") {

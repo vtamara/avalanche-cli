@@ -36,6 +36,7 @@ var (
 	deployDevnet                 bool
 	deployTestnet                bool
 	deployMainnet                bool
+	endpoint                     string
 	keyName                      string
 	useEwoq                      bool
 	useLedger                    bool
@@ -102,11 +103,7 @@ func parseBootstrappedOutput(filePath string) (bool, error) {
 }
 
 func GetMinStakingAmount(network models.Network) (uint64, error) {
-	apiURL, err := network.Endpoint()
-	if err != nil {
-		return 0, nil
-	}
-	pClient := platformvm.NewClient(apiURL)
+	pClient := platformvm.NewClient(network.Endpoint)
 	ctx, cancel := context.WithTimeout(context.Background(), constants.E2ERequestTimeout)
 	defer cancel()
 	minValStake, _, err := pClient.GetMinStake(ctx, ids.Empty)
@@ -369,6 +366,7 @@ func validatePrimaryNetwork(_ *cobra.Command, args []string) error {
 		deployDevnet,
 		deployTestnet,
 		deployMainnet,
+		endpoint,
 		[]models.NetworkKind{models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {

@@ -59,11 +59,7 @@ func IsCreateChainTx(tx *txs.Tx) bool {
 }
 
 func GetOwners(network models.Network, subnetID ids.ID) ([]string, uint32, error) {
-	api, err := network.Endpoint()
-	if err != nil {
-		return nil, 0, err
-	}
-	pClient := platformvm.NewClient(api)
+	pClient := platformvm.NewClient(network.Endpoint)
 	ctx := context.Background()
 	txBytes, err := pClient.GetTx(ctx, subnetID)
 	if err != nil {
@@ -83,11 +79,7 @@ func GetOwners(network models.Network, subnetID ids.ID) ([]string, uint32, error
 	}
 	controlKeys := owner.Addrs
 	threshold := owner.Threshold
-	networkID, err := network.NetworkID()
-	if err != nil {
-		return nil, 0, err
-	}
-	hrp := key.GetHRP(networkID)
+	hrp := key.GetHRP(network.Id)
 	controlKeysStrs := []string{}
 	for _, addr := range controlKeys {
 		addrStr, err := address.Format("P", hrp, addr[:])

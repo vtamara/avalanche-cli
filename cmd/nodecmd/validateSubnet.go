@@ -143,6 +143,7 @@ func validateSubnet(_ *cobra.Command, args []string) error {
 		deployDevnet,
 		deployTestnet,
 		deployMainnet,
+		endpoint,
 		[]models.NetworkKind{models.Devnet, models.Fuji},
 	)
 	if err != nil {

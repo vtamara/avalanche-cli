@@ -47,6 +47,7 @@ var (
 	deployTestnet            bool
 	deployMainnet            bool
 	deployDevnet             bool
+	endpoint                 string
 	sameControlKey           bool
 	keyName                  string
 	threshold                uint32
@@ -95,6 +96,7 @@ so you can take your locally tested Subnet and deploy it on Fuji or Mainnet.`,
 		PersistentPostRun: handlePostRun,
 		Args:              cobra.ExactArgs(1),
 	}
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "use the given endpoint for network operations")
 	cmd.Flags().BoolVarP(&deployLocal, "local", "l", false, "deploy to a local network")
 	cmd.Flags().BoolVar(&deployDevnet, "devnet", false, "deploy to a devnet network")
 	cmd.Flags().BoolVarP(&deployTestnet, "testnet", "t", false, "deploy to testnet (alias to `fuji`)")
@@ -276,6 +278,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		deployDevnet,
 		deployTestnet,
 		deployMainnet,
+		endpoint,
 		[]models.NetworkKind{models.Local, models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {
@@ -569,11 +572,6 @@ func getControlKeys(network models.Network, useLedger bool, kc keychain.Keychain
 }
 
 func useAllKeys(network models.Network) ([]string, error) {
-	networkID, err := network.NetworkID()
-	if err != nil {
-		return nil, err
-	}
-
 	existing := []string{}
 
 	files, err := os.ReadDir(app.GetKeyDir())
@@ -590,7 +588,7 @@ func useAllKeys(network models.Network) ([]string, error) {
 	}
 
 	for _, kp := range keyPaths {
-		k, err := key.LoadSoft(networkID, kp)
+		k, err := key.LoadSoft(network.Id, kp)
 		if err != nil {
 			return nil, err
 		}
@@ -606,11 +604,7 @@ func loadCreationKeys(network models.Network, kc keychain.Keychain) ([]string, e
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("no creation addresses found")
 	}
-	networkID, err := network.NetworkID()
-	if err != nil {
-		return nil, err
-	}
-	hrp := key.GetHRP(networkID)
+	hrp := key.GetHRP(network.Id)
 	addrsStr := []string{}
 	for _, addr := range addrs {
 		addrStr, err := address.Format("P", hrp, addr[:])
@@ -793,10 +787,6 @@ func GetKeychain(
 ) (keychain.Keychain, error) {
 	// get keychain accessor
 	var kc keychain.Keychain
-	networkID, err := network.NetworkID()
-	if err != nil {
-		return kc, err
-	}
 	if useLedger {
 		ledgerDevice, err := ledger.New()
 		if err != nil {
@@ -820,7 +810,7 @@ func GetKeychain(
 		}
 		addrStrs := []string{}
 		for _, addr := range addresses {
-			addrStr, err := address.Format("P", key.GetHRP(networkID), addr[:])
+			addrStr, err := address.Format("P", key.GetHRP(network.Id), addr[:])
 			if err != nil {
 				return kc, err
 			}
@@ -833,13 +823,13 @@ func GetKeychain(
 		return keychain.NewLedgerKeychainFromIndices(ledgerDevice, ledgerIndices)
 	}
 	if useEwoq {
-		sf, err := key.LoadEwoq(networkID)
+		sf, err := key.LoadEwoq(network.Id)
 		if err != nil {
 			return kc, err
 		}
 		return sf.KeyChain(), nil
 	}
-	sf, err := key.LoadSoft(networkID, app.GetKeyPath(keyName))
+	sf, err := key.LoadSoft(network.Id, app.GetKeyPath(keyName))
 	if err != nil {
 		return kc, err
 	}
@@ -946,11 +936,23 @@ func CheckForInvalidDeployAndGetAvagoVersion(network localnetworkinterface.Statu
 	return desiredAvagoVersion, nil
 }
 
+func fillNetworkDetails(network *models.Network) error {
+	if network.Kind == models.Devnet && network.Endpoint == "" {
+		endpoint, err := app.Prompt.CaptureString("Devnet Network Endpoint")
+		if err != nil {
+			return err
+		}
+		network.Endpoint = endpoint
+	}
+	return nil
+}
+
 func GetNetworkFromCmdLineFlags(
 	useLocal bool,
 	useDevnet bool,
 	useFuji bool,
 	useMainnet bool,
+	endpoint string,
 	supportedNetworkKinds []models.NetworkKind,
 ) (models.Network, error) {
 	// get network from flags
@@ -966,6 +968,10 @@ func GetNetworkFromCmdLineFlags(
 		network = models.MainnetNetwork
 	}
 
+	if endpoint != "" {
+		network.Endpoint = endpoint
+	}
+
 	// no flag was set, prompt user
 	if network.Kind == models.Undefined {
 		networkStr, err := app.Prompt.CaptureList(
@@ -975,7 +981,11 @@ func GetNetworkFromCmdLineFlags(
 		if err != nil {
 			return models.UndefinedNetwork, err
 		}
-		return models.NetworkFromString(networkStr), nil
+		network = models.NetworkFromString(networkStr)
+		if err := fillNetworkDetails(&network); err != nil {
+			return models.UndefinedNetwork, err
+		}
+		return network, nil
 	}
 
 	// for err messages
@@ -995,6 +1005,10 @@ func GetNetworkFromCmdLineFlags(
 	// not mutually exclusive flag selection
 	if !flags.EnsureMutuallyExclusive([]bool{useLocal, useDevnet, useFuji, useMainnet}) {
 		return models.UndefinedNetwork, fmt.Errorf("network flags %s are mutually exclusive", supportedNetworksFlags)
+	}
+
+	if err := fillNetworkDetails(&network); err != nil {
+		return models.UndefinedNetwork, err
 	}
 
 	return network, nil
