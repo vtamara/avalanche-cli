@@ -46,7 +46,7 @@ var (
 	deployLocal              bool
 	deployTestnet            bool
 	deployMainnet            bool
-	devnetEndpoint           string
+	deployDevnet             bool
 	sameControlKey           bool
 	keyName                  string
 	threshold                uint32
@@ -96,7 +96,7 @@ so you can take your locally tested Subnet and deploy it on Fuji or Mainnet.`,
 		Args:              cobra.ExactArgs(1),
 	}
 	cmd.Flags().BoolVarP(&deployLocal, "local", "l", false, "deploy to a local network")
-	cmd.Flags().StringVarP(&devnetEndpoint, "devnet", "d", "", "deploy to a devnet using given endpoint")
+	cmd.Flags().BoolVar(&deployDevnet, "devnet", false, "deploy to a devnet network")
 	cmd.Flags().BoolVarP(&deployTestnet, "testnet", "t", false, "deploy to testnet (alias to `fuji`)")
 	cmd.Flags().BoolVarP(&deployTestnet, "fuji", "f", false, "deploy to fuji (alias to `testnet`")
 	cmd.Flags().BoolVarP(&deployMainnet, "mainnet", "m", false, "deploy to mainnet")
@@ -273,9 +273,9 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 
 	network, err := GetNetworkFromCmdLineFlags(
 		deployLocal,
+		deployDevnet,
 		deployTestnet,
 		deployMainnet,
-		devnetEndpoint,
 		[]models.NetworkKind{models.Local, models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {
@@ -948,9 +948,9 @@ func CheckForInvalidDeployAndGetAvagoVersion(network localnetworkinterface.Statu
 
 func GetNetworkFromCmdLineFlags(
 	useLocal bool,
+	useDevnet bool,
 	useFuji bool,
 	useMainnet bool,
-	devnetEndpoint string,
 	supportedNetworkKinds []models.NetworkKind,
 ) (models.Network, error) {
 	// get network from flags
@@ -958,8 +958,8 @@ func GetNetworkFromCmdLineFlags(
 	switch {
 	case useLocal:
 		network = models.LocalNetwork
-	case devnetEndpoint != "":
-		network = models.NewNetwork(models.Devnet, 0, devnetEndpoint)
+	case useDevnet:
+		network = models.DevnetNetwork
 	case useFuji:
 		network = models.FujiNetwork
 	case useMainnet:
@@ -993,7 +993,7 @@ func GetNetworkFromCmdLineFlags(
 	}
 
 	// not mutually exclusive flag selection
-	if !flags.EnsureMutuallyExclusive([]bool{useLocal, devnetEndpoint != "", useFuji, useMainnet}) {
+	if !flags.EnsureMutuallyExclusive([]bool{useLocal, useDevnet, useFuji, useMainnet}) {
 		return models.UndefinedNetwork, fmt.Errorf("network flags %s are mutually exclusive", supportedNetworksFlags)
 	}
 

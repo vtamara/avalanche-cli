@@ -73,9 +73,9 @@ func addPermissionlessDelegator(_ *cobra.Command, args []string) error {
 
 	network, err := GetNetworkFromCmdLineFlags(
 		deployLocal,
+		deployDevnet,
 		deployTestnet,
 		deployMainnet,
-		"",
 		[]models.NetworkKind{models.Local, models.Fuji, models.Mainnet},
 	)
 	if err != nil {

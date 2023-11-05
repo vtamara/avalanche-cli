@@ -45,7 +45,7 @@ the --output flag.`,
 	)
 	cmd.Flags().BoolVar(&deployMainnet, "mainnet", false, "export `mainnet` genesis")
 	cmd.Flags().BoolVarP(&deployLocal, "local", "l", false, "export `local` genesis")
-	cmd.Flags().StringVarP(&devnetEndpoint, "devnet", "d", false, "export `devnet` genesis")
+	cmd.Flags().BoolVarP(&deployDevnet, "devnet", "d", false, "export `devnet` genesis")
 	cmd.Flags().BoolVarP(&deployTestnet, "testnet", "t", false, "export `fuji` genesis")
 	cmd.Flags().BoolVarP(&deployTestnet, "fuji", "f", false, "export `fuji` genesis")
 	cmd.Flags().StringVar(&customVMRepoURL, "custom-vm-repo-url", "", "custom vm repository url")

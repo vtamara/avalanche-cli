@@ -56,7 +56,7 @@ Testnet or Mainnet.`,
 	cmd.Flags().StringVar(&startTimeStr, "start-time", "", "UTC start time when this validator starts validating, in 'YYYY-MM-DD HH:MM:SS' format")
 	cmd.Flags().DurationVar(&duration, "staking-period", 0, "how long this validator will be staking")
 	cmd.Flags().BoolVar(&deployLocal, "local", false, "add subnet validator on `local`")
-	cmd.Flags().StringVar(&devnetEndpoint, "devnet", "", "add subnet validator on `devnet` using given endpoint")
+	cmd.Flags().BoolVar(&deployDevnet, "devnet", false, "add subnet validator on `devnet`")
 	cmd.Flags().BoolVar(&deployTestnet, "fuji", false, "add subnet validator on `fuji` (alias for `testnet`)")
 	cmd.Flags().BoolVar(&deployTestnet, "testnet", false, "add subnet validator on `testnet` (alias for `fuji`)")
 	cmd.Flags().BoolVar(&deployMainnet, "mainnet", false, "add subnet validator on `mainnet`")
@@ -71,9 +71,9 @@ Testnet or Mainnet.`,
 func addValidator(_ *cobra.Command, args []string) error {
 	network, err := GetNetworkFromCmdLineFlags(
 		deployLocal,
+		deployDevnet,
 		deployTestnet,
 		deployMainnet,
-		"",
 		[]models.NetworkKind{models.Local, models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {
