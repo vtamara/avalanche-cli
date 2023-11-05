@@ -51,7 +51,7 @@ func sshNode(_ *cobra.Command, args []string) error {
 			ux.Logger.PrintToUser("")
 		}
 	} else {
-		sshCluster(args, "")
+		return sshCluster(args, "")
 	}
 	return nil
 }
