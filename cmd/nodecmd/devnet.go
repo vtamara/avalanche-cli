@@ -136,6 +136,7 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 		confMap[config.BootstrapIDsKey] = strings.Join(bootstrapIDs, ",")
 		confMap[config.BootstrapIPsKey] = strings.Join(bootstrapIPs, ",")
 		confMap[config.GenesisFileKey] = "/home/ubuntu/.avalanchego/configs/genesis.json"
+		confMap[config.HTTPHostKey] = ""
 		bootstrapIDs = append(bootstrapIDs, nodeIDs[i])
 		bootstrapIPs = append(bootstrapIPs, ansibleHosts[ansibleHostID].IP+":9651")
 		confBytes, err := json.MarshalIndent(confMap, "", " ")
