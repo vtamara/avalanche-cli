@@ -22,10 +22,10 @@ import (
 	"github.com/ava-labs/avalanche-cli/pkg/prompts"
 	"github.com/ava-labs/avalanche-cli/pkg/subnet"
 	"github.com/ava-labs/avalanche-cli/pkg/txutils"
-	utilspkg "github.com/ava-labs/avalanche-cli/pkg/utils"
+	"github.com/ava-labs/avalanche-cli/pkg/utils"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/ava-labs/avalanche-cli/pkg/vm"
-	"github.com/ava-labs/avalanche-network-runner/utils"
+	anrutils "github.com/ava-labs/avalanche-network-runner/utils"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/crypto/keychain"
 	ledger "github.com/ava-labs/avalanchego/utils/crypto/ledger"
@@ -36,6 +36,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 	"golang.org/x/mod/semver"
 )
 
@@ -260,40 +261,21 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		return errors.New("unable to deploy subnets imported from a repo")
 	}
 
-	// get the network to deploy to
-	var network models.Network
-
-	if !flags.EnsureMutuallyExclusive([]bool{deployLocal, deployDevnet, deployTestnet, deployMainnet}) {
-		return errMutuallyExlusiveNetworksWithDevnet
-	}
-
 	if outputTxPath != "" {
 		if _, err := os.Stat(outputTxPath); err == nil {
 			return fmt.Errorf("outputTxPath %q already exists", outputTxPath)
 		}
 	}
 
-	switch {
-	case deployLocal:
-		network = models.Local
-	case deployDevnet:
-		network = models.Devnet
-	case deployTestnet:
-		network = models.Fuji
-	case deployMainnet:
-		network = models.Mainnet
-	}
-
-	if network == models.Undefined {
-		// no flag was set, prompt user
-		networkStr, err := app.Prompt.CaptureList(
-			"Choose a network to deploy on",
-			[]string{models.Local.String(), models.Devnet.String(), models.Fuji.String(), models.Mainnet.String()},
-		)
-		if err != nil {
-			return err
-		}
-		network = models.NetworkFromString(networkStr)
+	network, err := GetNetworkFromCmdLineFlags(
+		deployLocal,
+		deployDevnet,
+		deployTestnet,
+		deployMainnet,
+		[]models.Network{models.Local, models.Devnet, models.Fuji, models.Mainnet},
+	)
+	if err != nil {
+		return err
 	}
 
 	if network == models.Mainnet || os.Getenv(constants.SimulatePublicNetwork) != "" {
@@ -378,7 +360,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		}
 		flags := make(map[string]string)
 		flags[constants.Network] = network.String()
-		utilspkg.HandleTracking(cmd, app, flags)
+		utils.HandleTracking(cmd, app, flags)
 		return app.UpdateSidecarNetworks(&sidecar, network, subnetID, blockchainID)
 
 	case models.Devnet:
@@ -550,7 +532,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 
 	flags := make(map[string]string)
 	flags[constants.Network] = network.String()
-	utilspkg.HandleTracking(cmd, app, flags)
+	utils.HandleTracking(cmd, app, flags)
 
 	// update sidecar
 	// TODO: need to do something for backwards compatibility?
@@ -925,7 +907,7 @@ func getLedgerIndices(ledgerDevice keychain.Ledger, addressesStr []string) ([]ui
 }
 
 func PrintDeployResults(chain string, subnetID ids.ID, blockchainID ids.ID) error {
-	vmID, err := utils.VMID(chain)
+	vmID, err := anrutils.VMID(chain)
 	if err != nil {
 		return fmt.Errorf("failed to create VM ID from %s: %w", chain, err)
 	}
@@ -986,4 +968,58 @@ func CheckForInvalidDeployAndGetAvagoVersion(network localnetworkinterface.Statu
 		}
 	}
 	return desiredAvagoVersion, nil
+}
+
+func GetNetworkFromCmdLineFlags(
+	useLocal bool,
+	useDevnet bool,
+	useFuji bool,
+	useMainnet bool,
+	supportedNetworks []models.Network,
+) (models.Network, error) {
+	// get network from flags
+	var network models.Network
+	switch {
+	case useLocal:
+		network = models.Local
+	case useDevnet:
+		network = models.Devnet
+	case useFuji:
+		network = models.Fuji
+	case useMainnet:
+		network = models.Mainnet
+	}
+
+	// no flag was set, prompt user
+	if network == models.Undefined {
+		networkStr, err := app.Prompt.CaptureList(
+			"Choose a network for the operation",
+			utils.Map(supportedNetworks, func(n models.Network) string { return n.String() }),
+		)
+		if err != nil {
+			return models.Undefined, err
+		}
+		return models.NetworkFromString(networkStr), nil
+	}
+
+	// for err messages
+	networkFlags := map[models.Network]string{
+		models.Local:   "--local",
+		models.Devnet:  "--devnet",
+		models.Fuji:    "--fuji/--testnet",
+		models.Mainnet: "--mainnet",
+	}
+	supportedNetworksFlags := strings.Join(utils.Map(supportedNetworks, func(n models.Network) string { return networkFlags[n] }), ", ")
+
+	// unsupported network
+	if !slices.Contains(supportedNetworks, network) {
+		return models.Undefined, fmt.Errorf("network flag %s is not supported. use one of %s", networkFlags[network], supportedNetworksFlags)
+	}
+
+	// not mutually exclusive flag selection
+	if !flags.EnsureMutuallyExclusive([]bool{useLocal, useDevnet, useFuji, useMainnet}) {
+		return models.Undefined, fmt.Errorf("network flags %s are mutually exclusive", supportedNetworksFlags)
+	}
+
+	return network, nil
 }
