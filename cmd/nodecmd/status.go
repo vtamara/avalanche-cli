@@ -138,10 +138,15 @@ func statusNode(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	ansibleHosts, err := ansible.GetHostMapfromAnsibleInventory(app.GetAnsibleInventoryDirPath(clusterName))
+	if err != nil {
+		return err
+	}
 	printOutput(
 		clustersConfig,
 		hostIDs,
 		ansibleHostIDs,
+		ansibleHosts,
 		nodeIDs,
 		avalanchegoVersionForNode,
 		notHealthyNodes,
@@ -158,7 +163,8 @@ func statusNode(_ *cobra.Command, args []string) error {
 func printOutput(
 	clustersConfig models.ClustersConfig,
 	hostIDs []string,
-	hostAliases []string,
+	ansibleHostIDs []string,
+	ansibleHosts map[string]models.Host,
 	nodeIDs []string,
 	avagoVersions map[string]string,
 	notHealthyHosts []string,
@@ -185,36 +191,37 @@ func printOutput(
 	ux.Logger.PrintToUser(tit)
 	ux.Logger.PrintToUser(strings.Repeat("=", len(tit)))
 	ux.Logger.PrintToUser("")
-	header := []string{"Cloud ID", "Node ID", "Network", "Avago Version", "Primary Network", "Healthy"}
+	header := []string{"Cloud ID", "Node ID", "IP", "Network", "Avago Version", "Primary Network", "Healthy"}
 	if subnetName != "" {
 		header = append(header, "Subnet "+subnetName)
 	}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader(header)
 	table.SetRowLine(true)
-	for i, host := range hostAliases {
+	for i, ansibleHostID := range ansibleHostIDs {
 		boostrappedStatus := logging.Green.Wrap("OK")
-		if slices.Contains(notBootstrappedHosts, host) {
+		if slices.Contains(notBootstrappedHosts, ansibleHostID) {
 			boostrappedStatus = logging.Red.Wrap("NOT_BOOTSTRAPPED")
 		}
 		healthyStatus := logging.Green.Wrap("OK")
-		if slices.Contains(notHealthyHosts, host) {
+		if slices.Contains(notHealthyHosts, ansibleHostID) {
 			healthyStatus = logging.Red.Wrap("ERR")
 		}
 		row := []string{
 			hostIDs[i],
 			nodeIDs[i],
+			ansibleHosts[ansibleHostID].IP,
 			clustersConfig.Clusters[clusterName].Network.String(),
-			avagoVersions[host],
+			avagoVersions[ansibleHostID],
 			boostrappedStatus,
 			healthyStatus,
 		}
 		if subnetName != "" {
 			syncedStatus := logging.Red.Wrap("NOT_BOOTSTRAPPED")
-			if slices.Contains(subnetSyncedHosts, host) {
+			if slices.Contains(subnetSyncedHosts, ansibleHostID) {
 				syncedStatus = logging.Green.Wrap("SYNCED")
 			}
-			if slices.Contains(subnetValidatingHosts, host) {
+			if slices.Contains(subnetValidatingHosts, ansibleHostID) {
 				syncedStatus = logging.Green.Wrap("VALIDATING")
 			}
 			row = append(row, syncedStatus)

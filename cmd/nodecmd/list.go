@@ -5,6 +5,7 @@ package nodecmd
 import (
 	"fmt"
 
+	"github.com/ava-labs/avalanche-cli/pkg/ansible"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 
@@ -46,12 +47,24 @@ func list(_ *cobra.Command, _ []string) error {
 		if err := setupAnsible(clusterName); err != nil {
 			return err
 		}
-		for _, clusterNode := range clusterConf.Nodes {
-			nodeID, err := getNodeID(app.GetNodeInstanceDirPath(clusterNode))
+		ansibleHostIDs, err := ansible.GetAnsibleHostsFromInventory(app.GetAnsibleInventoryDirPath(clusterName))
+		if err != nil {
+			return err
+		}
+		ansibleHosts, err := ansible.GetHostMapfromAnsibleInventory(app.GetAnsibleInventoryDirPath(clusterName))
+		if err != nil {
+			return err
+		}
+		for _, ansibleHostID := range ansibleHostIDs {
+			_, cloudHostID, err := models.HostAnsibleIDToCloudID(ansibleHostID)
 			if err != nil {
 				return err
 			}
-			ux.Logger.PrintToUser(fmt.Sprintf("  Node %s (%s)", clusterNode, nodeID.String()))
+			nodeID, err := getNodeID(app.GetNodeInstanceDirPath(cloudHostID))
+			if err != nil {
+				return err
+			}
+			ux.Logger.PrintToUser(fmt.Sprintf("  Node %s (%s) %s", cloudHostID, nodeID.String(), ansibleHosts[ansibleHostID].IP))
 		}
 	}
 	return nil

@@ -18,7 +18,6 @@ import (
 	"github.com/ava-labs/avalanche-cli/pkg/constants"
 	"github.com/ava-labs/avalanche-cli/pkg/key"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
-	"github.com/ava-labs/avalanche-cli/pkg/prompts"
 	"github.com/ava-labs/avalanche-cli/pkg/utils"
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/ava-labs/avalanchego/config"
@@ -39,10 +38,6 @@ The node devnet command moves all nodes of a cluster into a new devnet.
 		Args:         cobra.ExactArgs(1),
 		RunE:         intoDevnet,
 	}
-
-	cmd.Flags().StringVarP(&keyName, "key", "k", "", "select the key to use")
-	cmd.Flags().BoolVarP(&useEwoq, "ewoq", "e", false, "use ewoq key")
-	cmd.Flags().BoolVarP(&useLedger, "ledger", "g", false, "use ledger instead of key")
 
 	return cmd
 }
@@ -87,13 +82,7 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	if !useLedger && !useEwoq && keyName == "" {
-		useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "as devnet founded key", app.GetKeyDir())
-		if err != nil {
-			return err
-		}
-	}
+	useEwoq := true
 
 	k, err := key.NewSoft(networkID)
 	if err != nil {
