@@ -1048,12 +1048,10 @@ func GetKeychainFromCmdLineFlags(
 		}
 	case network == models.Mainnet:
 		// mainnet requires ledger usage
-		if network == models.Mainnet {
-			*useLedger = true
-			if keyName != "" || useEwoq {
-				return nil, ErrStoredKeyOrEwoqOnMainnet
-			}
+		if keyName != "" || useEwoq {
+			return nil, ErrStoredKeyOrEwoqOnMainnet
 		}
+		*useLedger = true
 	}
 
 	// will use default local keychain if simulating public network opeations on local
