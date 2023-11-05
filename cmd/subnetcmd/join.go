@@ -81,6 +81,7 @@ This command currently only supports Subnets deployed on the Fuji Testnet and Ma
 	cmd.Flags().BoolVar(&deployTestnet, "fuji", false, "join on `fuji` (alias for `testnet`)")
 	cmd.Flags().BoolVar(&deployTestnet, "testnet", false, "join on `testnet` (alias for `fuji`)")
 	cmd.Flags().BoolVar(&deployLocal, "local", false, "join on `local` (for elastic subnet only)")
+	cmd.Flags().BoolVar(&deployDevnet, "devnet", false, "join on `devnet`")
 	cmd.Flags().BoolVar(&deployMainnet, "mainnet", false, "join on `mainnet`")
 	cmd.Flags().BoolVar(&printManual, "print", false, "if true, print the manual config without prompting")
 	cmd.Flags().StringVar(&nodeIDStr, "nodeID", "", "set the NodeID of the validator to check")
@@ -112,14 +113,16 @@ func joinCmd(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	if !flags.EnsureMutuallyExclusive([]bool{deployMainnet, deployTestnet}) {
-		return errors.New("--fuji and --mainnet are mutually exclusive")
+	if !flags.EnsureMutuallyExclusive([]bool{deployMainnet, deployTestnet, deployLocal, deployDevnet}) {
+		return errMutuallyExlusiveNetworksWithDevnet
 	}
 
 	var network models.Network
 	switch {
 	case deployLocal:
 		network = models.Local
+	case deployDevnet:
+		network = models.Devnet
 	case deployTestnet:
 		network = models.Fuji
 	case deployMainnet:

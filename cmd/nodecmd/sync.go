@@ -266,7 +266,7 @@ func trackSubnet(clusterName, subnetName string, network models.Network) ([]stri
 	untrackedNodes := []string{}
 	for _, host := range hostAliases {
 		// runs avalanche join subnet command
-		if err = ansible.RunAnsiblePlaybookTrackSubnet(app.GetAnsibleDir(), subnetName, subnetPath, app.GetAnsibleInventoryDirPath(clusterName), host); err != nil {
+		if err = ansible.RunAnsiblePlaybookTrackSubnet(app.GetAnsibleDir(), network, subnetName, subnetPath, app.GetAnsibleInventoryDirPath(clusterName), host); err != nil {
 			untrackedNodes = append(untrackedNodes, host)
 		}
 	}

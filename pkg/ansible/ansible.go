@@ -239,8 +239,26 @@ func RunAnsiblePlaybookImportSubnet(ansibleDir, inventoryPath, subnetPath, ansib
 
 // RunAnsiblePlaybookTrackSubnet runs avalanche subnet join <subnetName> in cloud server
 // targets a specific host ansibleHostID in ansible inventory file
-func RunAnsiblePlaybookTrackSubnet(ansibleDir, subnetName, importPath, inventoryPath, ansibleHostID string) error {
-	playbookInputs := "target=" + ansibleHostID + " subnetExportFileName=" + importPath + " subnetName=" + subnetName
+func RunAnsiblePlaybookTrackSubnet(
+	ansibleDir string,
+	network models.Network,
+	subnetName string,
+	importPath string,
+	inventoryPath string,
+	ansibleHostID string,
+) error {
+	networkFlag := ""
+	switch network {
+	case models.Local:
+		networkFlag = "--local"
+	case models.Devnet:
+		networkFlag = "--devnet"
+	case models.Fuji:
+		networkFlag = "--fuji"
+	case models.Mainnet:
+		networkFlag = "--mainnet"
+	}
+	playbookInputs := "target=" + ansibleHostID + " subnetExportFileName=" + importPath + " subnetName=" + subnetName + " networkFlag=" + networkFlag
 	cmd := exec.Command(constants.AnsiblePlaybook, constants.TrackSubnetPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
 	cmd.Dir = ansibleDir
 	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
