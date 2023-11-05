@@ -81,9 +81,12 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 		return err
 	}
 
+	useEwoq := true
 	network := models.DevnetNetwork
 	network.Endpoint = "http://" + ansibleHosts[ansibleHostIDs[0]].IP + ":9650"
-	useEwoq := true
+
+	ux.Logger.PrintToUser("Devnet Network Id: %d", network.Id)
+	ux.Logger.PrintToUser("Devnet Endpoint: %s", network.Endpoint)
 
 	k, err := key.NewSoft(network.Id)
 	if err != nil {
