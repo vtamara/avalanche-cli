@@ -143,7 +143,7 @@ func validateSubnet(_ *cobra.Command, args []string) error {
 		deployDevnet,
 		deployTestnet,
 		deployMainnet,
-		[]models.Network{models.Devnet, models.Fuji},
+		[]models.NetworkKind{models.Devnet, models.Fuji},
 	)
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func validateSubnet(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	blockchainID := sc.Networks[network.String()].BlockchainID
+	blockchainID := sc.Networks[network.Kind().String()].BlockchainID
 	if blockchainID == ids.Empty {
 		return ErrNoBlockchainID
 	}

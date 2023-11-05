@@ -46,7 +46,7 @@ var (
 	deployLocal              bool
 	deployTestnet            bool
 	deployMainnet            bool
-	deployDevnet             bool
+	devnetEndpoint           string
 	sameControlKey           bool
 	keyName                  string
 	threshold                uint32
@@ -96,7 +96,7 @@ so you can take your locally tested Subnet and deploy it on Fuji or Mainnet.`,
 		Args:              cobra.ExactArgs(1),
 	}
 	cmd.Flags().BoolVarP(&deployLocal, "local", "l", false, "deploy to a local network")
-	cmd.Flags().BoolVarP(&deployDevnet, "devnet", "d", false, "deploy to a devnet")
+	cmd.Flags().StringVarP(&devnetEndpoint, "devnet", "d", "", "deploy to a devnet using given endpoint")
 	cmd.Flags().BoolVarP(&deployTestnet, "testnet", "t", false, "deploy to testnet (alias to `fuji`)")
 	cmd.Flags().BoolVarP(&deployTestnet, "fuji", "f", false, "deploy to fuji (alias to `testnet`")
 	cmd.Flags().BoolVarP(&deployMainnet, "mainnet", "m", false, "deploy to mainnet")
@@ -149,7 +149,7 @@ func getChainsInSubnet(subnetName string) ([]string, error) {
 }
 
 func checkDefaultAddressNotInAlloc(network models.Network, chain string) error {
-	if network != models.Local && network != models.Devnet && os.Getenv(constants.SimulatePublicNetwork) == "" {
+	if network.Kind() != models.Local && network.Kind() != models.Devnet && os.Getenv(constants.SimulatePublicNetwork) == "" {
 		genesis, err := app.LoadEvmGenesis(chain)
 		if err != nil {
 			return err
@@ -273,16 +273,16 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 
 	network, err := GetNetworkFromCmdLineFlags(
 		deployLocal,
-		deployDevnet,
 		deployTestnet,
 		deployMainnet,
-		[]models.Network{models.Local, models.Devnet, models.Fuji, models.Mainnet},
+		devnetEndpoint,
+		[]models.NetworkKind{models.Local, models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {
 		return err
 	}
 
-	if network == models.Mainnet || os.Getenv(constants.SimulatePublicNetwork) != "" {
+	if network.Kind() == models.Mainnet || os.Getenv(constants.SimulatePublicNetwork) != "" {
 		err = handleMainnetChainID(chain)
 		if err != nil {
 			return err
@@ -290,7 +290,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	}
 
 	// deploy based on chosen network
-	ux.Logger.PrintToUser("Deploying %s to %s", chains, network.String())
+	ux.Logger.PrintToUser("Deploying %s to %s", chains, network.Kind().String())
 	chainGenesis, err := app.LoadRawGenesis(chain, network)
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to validate genesis format: %w", err)
 	}
 
-	if network == models.Local {
+	if network.Kind() == models.Local {
 		app.Log.Debug("Deploy local")
 
 		genesisPath := app.GetGenesisPath(chain)
@@ -354,7 +354,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		flags := make(map[string]string)
-		flags[constants.Network] = network.String()
+		flags[constants.Network] = network.Kind().String()
 		utils.HandleTracking(cmd, app, flags)
 		return app.UpdateSidecarNetworks(&sidecar, network, subnetID, blockchainID)
 	}
@@ -375,7 +375,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 
 	// used in E2E to simulate public network execution paths on a local network
 	if os.Getenv(constants.SimulatePublicNetwork) != "" {
-		network = models.Local
+		network = models.LocalNetwork
 	}
 
 	createSubnet := true
@@ -388,7 +388,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 		}
 		createSubnet = false
 	} else if sidecar.Networks != nil {
-		model, ok := sidecar.Networks[network.String()]
+		model, ok := sidecar.Networks[network.Kind().String()]
 		if ok {
 			if model.SubnetID != ids.Empty && model.BlockchainID == ids.Empty {
 				subnetID = model.SubnetID
@@ -507,7 +507,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 	}
 
 	flags := make(map[string]string)
-	flags[constants.Network] = network.String()
+	flags[constants.Network] = network.Kind().String()
 	utils.HandleTracking(cmd, app, flags)
 
 	// update sidecar
@@ -535,7 +535,7 @@ func getControlKeys(network models.Network, useLedger bool, kc keychain.Keychain
 	} else {
 		creation = "Use fee-paying key"
 	}
-	if network == models.Mainnet {
+	if network.Kind() == models.Mainnet {
 		listOptions = []string{creation, custom}
 	} else {
 		listOptions = []string{creation, useAll, custom}
@@ -948,53 +948,53 @@ func CheckForInvalidDeployAndGetAvagoVersion(network localnetworkinterface.Statu
 
 func GetNetworkFromCmdLineFlags(
 	useLocal bool,
-	useDevnet bool,
 	useFuji bool,
 	useMainnet bool,
-	supportedNetworks []models.Network,
+	devnetEndpoint string,
+	supportedNetworkKinds []models.NetworkKind,
 ) (models.Network, error) {
 	// get network from flags
-	var network models.Network
+	network := models.UndefinedNetwork
 	switch {
 	case useLocal:
-		network = models.Local
-	case useDevnet:
-		network = models.Devnet
+		network = models.LocalNetwork
+	case devnetEndpoint != "":
+		network = models.NewNetwork(models.Devnet, 0, devnetEndpoint)
 	case useFuji:
-		network = models.Fuji
+		network = models.FujiNetwork
 	case useMainnet:
-		network = models.Mainnet
+		network = models.MainnetNetwork
 	}
 
 	// no flag was set, prompt user
-	if network == models.Undefined {
+	if network.Kind() == models.Undefined {
 		networkStr, err := app.Prompt.CaptureList(
 			"Choose a network for the operation",
-			utils.Map(supportedNetworks, func(n models.Network) string { return n.String() }),
+			utils.Map(supportedNetworkKinds, func(n models.NetworkKind) string { return n.String() }),
 		)
 		if err != nil {
-			return models.Undefined, err
+			return models.UndefinedNetwork, err
 		}
 		return models.NetworkFromString(networkStr), nil
 	}
 
 	// for err messages
-	networkFlags := map[models.Network]string{
+	networkFlags := map[models.NetworkKind]string{
 		models.Local:   "--local",
 		models.Devnet:  "--devnet",
 		models.Fuji:    "--fuji/--testnet",
 		models.Mainnet: "--mainnet",
 	}
-	supportedNetworksFlags := strings.Join(utils.Map(supportedNetworks, func(n models.Network) string { return networkFlags[n] }), ", ")
+	supportedNetworksFlags := strings.Join(utils.Map(supportedNetworkKinds, func(n models.NetworkKind) string { return networkFlags[n] }), ", ")
 
 	// unsupported network
-	if !slices.Contains(supportedNetworks, network) {
-		return models.Undefined, fmt.Errorf("network flag %s is not supported. use one of %s", networkFlags[network], supportedNetworksFlags)
+	if !slices.Contains(supportedNetworkKinds, network.Kind()) {
+		return models.UndefinedNetwork, fmt.Errorf("network flag %s is not supported. use one of %s", networkFlags[network.Kind()], supportedNetworksFlags)
 	}
 
 	// not mutually exclusive flag selection
-	if !flags.EnsureMutuallyExclusive([]bool{useLocal, useDevnet, useFuji, useMainnet}) {
-		return models.Undefined, fmt.Errorf("network flags %s are mutually exclusive", supportedNetworksFlags)
+	if !flags.EnsureMutuallyExclusive([]bool{useLocal, devnetEndpoint != "", useFuji, useMainnet}) {
+		return models.UndefinedNetwork, fmt.Errorf("network flags %s are mutually exclusive", supportedNetworksFlags)
 	}
 
 	return network, nil
@@ -1019,13 +1019,13 @@ func GetKeychainFromCmdLineFlags(
 	}
 
 	switch {
-	case network == models.Devnet:
+	case network.Kind() == models.Devnet:
 		// going to just use ewoq atm
 		useEwoq = true
 		if keyName != "" || *useLedger {
 			return nil, ErrNonEwoqKeyOnDevnet
 		}
-	case network == models.Local:
+	case network.Kind() == models.Local:
 		// prompt the user if no key source was provided
 		if !*useLedger && !useEwoq && keyName == "" {
 			var err error
@@ -1034,7 +1034,7 @@ func GetKeychainFromCmdLineFlags(
 				return nil, err
 			}
 		}
-	case network == models.Fuji:
+	case network.Kind() == models.Fuji:
 		if useEwoq {
 			return nil, ErrEwoqKeyOnFuji
 		}
@@ -1046,7 +1046,7 @@ func GetKeychainFromCmdLineFlags(
 				return nil, err
 			}
 		}
-	case network == models.Mainnet:
+	case network.Kind() == models.Mainnet:
 		// mainnet requires ledger usage
 		if keyName != "" || useEwoq {
 			return nil, ErrStoredKeyOrEwoqOnMainnet
@@ -1056,7 +1056,7 @@ func GetKeychainFromCmdLineFlags(
 
 	// will use default local keychain if simulating public network opeations on local
 	if os.Getenv(constants.SimulatePublicNetwork) != "" {
-		network = models.Local
+		network = models.LocalNetwork
 	}
 
 	// get keychain accessor

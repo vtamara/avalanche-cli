@@ -56,7 +56,7 @@ Testnet or Mainnet.`,
 	cmd.Flags().StringVar(&startTimeStr, "start-time", "", "UTC start time when this validator starts validating, in 'YYYY-MM-DD HH:MM:SS' format")
 	cmd.Flags().DurationVar(&duration, "staking-period", 0, "how long this validator will be staking")
 	cmd.Flags().BoolVar(&deployLocal, "local", false, "add subnet validator on `local`")
-	cmd.Flags().BoolVar(&deployDevnet, "devnet", false, "add subnet validator on `devnet`")
+	cmd.Flags().StringVar(&devnetEndpoint, "devnet", "", "add subnet validator on `devnet` using given endpoint")
 	cmd.Flags().BoolVar(&deployTestnet, "fuji", false, "add subnet validator on `fuji` (alias for `testnet`)")
 	cmd.Flags().BoolVar(&deployTestnet, "testnet", false, "add subnet validator on `testnet` (alias for `fuji`)")
 	cmd.Flags().BoolVar(&deployMainnet, "mainnet", false, "add subnet validator on `mainnet`")
@@ -71,10 +71,10 @@ Testnet or Mainnet.`,
 func addValidator(_ *cobra.Command, args []string) error {
 	network, err := GetNetworkFromCmdLineFlags(
 		deployLocal,
-		deployDevnet,
 		deployTestnet,
 		deployMainnet,
-		[]models.Network{models.Local, models.Devnet, models.Fuji, models.Mainnet},
+		"",
+		[]models.NetworkKind{models.Local, models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func CallAddValidator(
 
 	// used in E2E to simulate public network execution paths on a local network
 	if os.Getenv(constants.SimulatePublicNetwork) != "" {
-		network = models.Local
+		network = models.LocalNetwork
 	}
 
 	chains, err := ValidateSubnetNameAndGetChains([]string{subnetName})
@@ -128,7 +128,7 @@ func CallAddValidator(
 		return err
 	}
 
-	subnetID := sc.Networks[network.String()].SubnetID
+	subnetID := sc.Networks[network.Kind().String()].SubnetID
 	if subnetID == ids.Empty {
 		return errNoSubnetID
 	}
@@ -184,7 +184,7 @@ func CallAddValidator(
 	}
 
 	ux.Logger.PrintToUser("NodeID: %s", nodeID.String())
-	ux.Logger.PrintToUser("Network: %s", network.String())
+	ux.Logger.PrintToUser("Network: %s", network.Kind().String())
 	ux.Logger.PrintToUser("Start time: %s", start.Format(constants.TimeParseLayout))
 	ux.Logger.PrintToUser("End time: %s", start.Add(duration).Format(constants.TimeParseLayout))
 	ux.Logger.PrintToUser("Weight: %d", weight)
@@ -217,7 +217,7 @@ func PromptDuration(start time.Time, network models.Network) (time.Duration, err
 		txt := "How long should this validator be validating? Enter a duration, e.g. 8760h. Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\""
 		var d time.Duration
 		var err error
-		if network == models.Fuji {
+		if network.Kind() == models.Fuji {
 			d, err = app.Prompt.CaptureFujiDuration(txt)
 		} else {
 			d, err = app.Prompt.CaptureMainnetDuration(txt)

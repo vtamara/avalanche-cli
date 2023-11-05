@@ -400,7 +400,7 @@ func (app *Avalanche) LoadRawGenesis(subnetName string, network models.Network) 
 	if err != nil {
 		return nil, err
 	}
-	if network == models.Mainnet {
+	if network.Kind() == models.Mainnet {
 		genesisPath = app.GetGenesisMainnetPath(subnetName)
 		genesisMainnetBytes, err := os.ReadFile(genesisPath)
 		if err == nil {
@@ -483,7 +483,7 @@ func (app *Avalanche) UpdateSidecarNetworks(
 	if sc.Networks == nil {
 		sc.Networks = make(map[string]models.NetworkData)
 	}
-	sc.Networks[network.String()] = models.NetworkData{
+	sc.Networks[network.Kind().String()] = models.NetworkData{
 		SubnetID:     subnetID,
 		BlockchainID: blockchainID,
 		RPCVersion:   sc.RPCVersion,
@@ -506,8 +506,8 @@ func (app *Avalanche) UpdateSidecarElasticSubnet(
 	if sc.ElasticSubnet == nil {
 		sc.ElasticSubnet = make(map[string]models.ElasticSubnet)
 	}
-	partialTxs := sc.ElasticSubnet[network.String()].Txs
-	sc.ElasticSubnet[network.String()] = models.ElasticSubnet{
+	partialTxs := sc.ElasticSubnet[network.Kind().String()].Txs
+	sc.ElasticSubnet[network.Kind().String()] = models.ElasticSubnet{
 		SubnetID:    subnetID,
 		AssetID:     assetID,
 		PChainTXID:  pchainTXID,
@@ -527,12 +527,12 @@ func (app *Avalanche) UpdateSidecarPermissionlessValidator(
 	nodeID string,
 	txID ids.ID,
 ) error {
-	elasticSubnet := sc.ElasticSubnet[network.String()]
+	elasticSubnet := sc.ElasticSubnet[network.Kind().String()]
 	if elasticSubnet.Validators == nil {
 		elasticSubnet.Validators = make(map[string]models.PermissionlessValidators)
 	}
 	elasticSubnet.Validators[nodeID] = models.PermissionlessValidators{TxID: txID}
-	sc.ElasticSubnet[network.String()] = elasticSubnet
+	sc.ElasticSubnet[network.Kind().String()] = elasticSubnet
 	if err := app.UpdateSidecar(sc); err != nil {
 		return err
 	}
@@ -549,11 +549,11 @@ func (app *Avalanche) UpdateSidecarElasticSubnetPartialTx(
 		sc.ElasticSubnet = make(map[string]models.ElasticSubnet)
 	}
 	partialTxs := make(map[string]ids.ID)
-	if sc.ElasticSubnet[network.String()].Txs != nil {
-		partialTxs = sc.ElasticSubnet[network.String()].Txs
+	if sc.ElasticSubnet[network.Kind().String()].Txs != nil {
+		partialTxs = sc.ElasticSubnet[network.Kind().String()].Txs
 	}
 	partialTxs[txName] = txID
-	sc.ElasticSubnet[network.String()] = models.ElasticSubnet{
+	sc.ElasticSubnet[network.Kind().String()] = models.ElasticSubnet{
 		Txs: partialTxs,
 	}
 	return app.UpdateSidecar(sc)

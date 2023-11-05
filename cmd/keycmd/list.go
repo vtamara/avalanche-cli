@@ -150,13 +150,13 @@ func listKeys(*cobra.Command, []string) error {
 	var addrInfos []addressInfo
 	networks := []models.Network{}
 	if local || all {
-		networks = append(networks, models.Local)
+		networks = append(networks, models.LocalNetwork)
 	}
 	if testnet || all {
-		networks = append(networks, models.Fuji)
+		networks = append(networks, models.FujiNetwork)
 	}
 	if mainnet || all {
-		networks = append(networks, models.Mainnet)
+		networks = append(networks, models.MainnetNetwork)
 	}
 	if len(networks) == 0 {
 		// no flag was set, prompt user
@@ -331,7 +331,7 @@ func getPChainAddrInfo(
 	balance, err := getPChainBalanceStr(context.Background(), pClients[network], pChainAddr)
 	if err != nil {
 		// just ignore local network errors
-		if network != models.Local {
+		if network.Kind() != models.Local {
 			return addressInfo{}, err
 		}
 	}
@@ -341,7 +341,7 @@ func getPChainAddrInfo(
 		chain:   "P-Chain (Bech32 format)",
 		address: pChainAddr,
 		balance: balance,
-		network: network.String(),
+		network: network.Kind().String(),
 	}, nil
 }
 
@@ -355,7 +355,7 @@ func getCChainAddrInfo(
 	cChainBalance, err := getCChainBalanceStr(context.Background(), cClients[network], cChainAddr)
 	if err != nil {
 		// just ignore local network errors
-		if network != models.Local {
+		if network.Kind() != models.Local {
 			return addressInfo{}, err
 		}
 	}
@@ -365,7 +365,7 @@ func getCChainAddrInfo(
 		chain:   "C-Chain (Ethereum hex format)",
 		address: cChainAddr,
 		balance: cChainBalance,
-		network: network.String(),
+		network: network.Kind().String(),
 	}, nil
 }
 

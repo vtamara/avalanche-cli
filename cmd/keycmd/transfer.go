@@ -155,15 +155,15 @@ func transferF(*cobra.Command, []string) error {
 
 	var network models.Network
 	if local {
-		network = models.Local
+		network = models.LocalNetwork
 	}
 	if testnet {
-		network = models.Fuji
+		network = models.FujiNetwork
 	}
 	if mainnet {
-		network = models.Mainnet
+		network = models.MainnetNetwork
 	}
-	if network == models.Undefined {
+	if network == models.UndefinedNetwork {
 		// no flag was set, prompt user
 		networkStr, err := app.Prompt.CaptureList(
 			"Network to use",
@@ -234,12 +234,12 @@ func transferF(*cobra.Command, []string) error {
 	}
 	amount := uint64(amountFlt * float64(units.Avax))
 
-	fees := map[models.Network]uint64{
+	fees := map[models.NetworkKind]uint64{
 		models.Fuji:    genesis.FujiParams.TxFeeConfig.TxFee,
 		models.Mainnet: genesis.MainnetParams.TxFeeConfig.TxFee,
 		models.Local:   genesis.LocalParams.TxFeeConfig.TxFee,
 	}
-	fee := fees[network]
+	fee := fees[network.Kind()]
 
 	var kc keychain.Keychain
 	if keyName != "" {

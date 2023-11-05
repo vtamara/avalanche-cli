@@ -177,7 +177,7 @@ func createNodes(_ *cobra.Command, args []string) error {
 		gcpProjectName = projectName
 		gcpCredentialFilepath = credentialFilepath
 	}
-	network := models.Fuji
+	network := models.FujiNetwork
 	if err = createClusterNodeConfig(network, cloudConfig, clusterName, cloudService); err != nil {
 		return err
 	}

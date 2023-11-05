@@ -32,11 +32,11 @@ func GetNetwork(tx *txs.Tx) (models.Network, error) {
 	case *txs.AddPermissionlessValidatorTx:
 		networkID = unsignedTx.NetworkID
 	default:
-		return models.Undefined, fmt.Errorf("unexpected unsigned tx type %T", unsignedTx)
+		return models.UndefinedNetwork, fmt.Errorf("unexpected unsigned tx type %T", unsignedTx)
 	}
 	network := models.NetworkFromNetworkID(networkID)
-	if network == models.Undefined {
-		return models.Undefined, fmt.Errorf("undefined network model for tx")
+	if network == models.UndefinedNetwork {
+		return models.UndefinedNetwork, fmt.Errorf("undefined network model for tx")
 	}
 	return network, nil
 }

@@ -77,7 +77,7 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	network := models.Devnet
+	network := models.DevnetNetwork
 	networkID, err := network.NetworkID()
 	if err != nil {
 		return err

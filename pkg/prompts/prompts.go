@@ -791,7 +791,7 @@ func GetSubnetAuthKeys(prompt Prompter, walletKey string, controlKeys []string, 
 }
 
 func GetEwoqKeyOrLedger(prompt Prompter, network models.Network, goal string, keyDir string) (bool, bool, string, error) {
-	askForEwoq := network != models.Fuji
+	askForEwoq := network.Kind() != models.Fuji
 	option, err := prompt.ChooseEwoqKeyOrLedger(askForEwoq, goal)
 	if err != nil {
 		return false, false, "", err

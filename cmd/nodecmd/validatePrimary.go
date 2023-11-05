@@ -154,10 +154,10 @@ func joinAsPrimaryNetworkValidator(
 	// we set the starting time for node to be a Primary Network Validator to be in 1 minute
 	// we use min delegation fee as default
 	delegationFee := genesis.FujiParams.MinDelegationFee
-	if network == models.Mainnet {
+	if network.Kind() == models.Mainnet {
 		delegationFee = genesis.MainnetParams.MinDelegationFee
 	}
-	if network == models.Devnet {
+	if network.Kind() == models.Devnet {
 		delegationFee = genesis.LocalParams.MinDelegationFee
 	}
 	blsKeyBytes, err := os.ReadFile(signingKeyPath)
@@ -174,10 +174,10 @@ func joinAsPrimaryNetworkValidator(
 
 func PromptWeightPrimaryNetwork(network models.Network) (uint64, error) {
 	defaultStake := genesis.FujiParams.MinValidatorStake
-	if network == models.Mainnet {
+	if network.Kind() == models.Mainnet {
 		defaultStake = genesis.MainnetParams.MinValidatorStake
 	}
-	if network == models.Devnet {
+	if network.Kind() == models.Devnet {
 		defaultStake = genesis.LocalParams.MinValidatorStake
 	}
 	defaultWeight := fmt.Sprintf("Default (%s)", convertNanoAvaxToAvaxString(defaultStake))
@@ -248,7 +248,7 @@ func GetTimeParametersPrimaryNetwork(network models.Network, nodeIndex int, vali
 
 func getDefaultValidationTime(start time.Time, network models.Network, nodeIndex int) (time.Duration, error) {
 	durationStr := constants.DefaultFujiStakeDuration
-	if network == models.Mainnet {
+	if network.Kind() == models.Mainnet {
 		durationStr = constants.DefaultMainnetStakeDuration
 	}
 	durationInt, err := strconv.Atoi(durationStr[:len(durationStr)-1])
@@ -369,7 +369,7 @@ func validatePrimaryNetwork(_ *cobra.Command, args []string) error {
 		deployDevnet,
 		deployTestnet,
 		deployMainnet,
-		[]models.Network{models.Devnet, models.Fuji, models.Mainnet},
+		[]models.NetworkKind{models.Devnet, models.Fuji, models.Mainnet},
 	)
 	if err != nil {
 		return err
@@ -457,7 +457,7 @@ func convertNanoAvaxToAvaxString(weight uint64) string {
 
 func PrintNodeJoinPrimaryNetworkOutput(nodeID ids.NodeID, weight uint64, network models.Network, start time.Time) {
 	ux.Logger.PrintToUser("NodeID: %s", nodeID.String())
-	ux.Logger.PrintToUser("Network: %s", network.String())
+	ux.Logger.PrintToUser("Network: %s", network.Kind().String())
 	ux.Logger.PrintToUser("Start time: %s", start.Format(constants.TimeParseLayout))
 	ux.Logger.PrintToUser("End time: %s", start.Add(duration).Format(constants.TimeParseLayout))
 	// we need to divide by 10 ^ 9 since we were using nanoAvax

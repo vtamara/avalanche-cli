@@ -112,7 +112,7 @@ func EditConfigFile(
 	}
 
 	networkIDValue := ""
-	switch network {
+	switch network.Kind() {
 	case models.Local:
 		networkIDValue = "network-" + fmt.Sprint(networkID)
 	case models.Devnet:

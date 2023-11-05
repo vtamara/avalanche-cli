@@ -248,7 +248,7 @@ func RunAnsiblePlaybookTrackSubnet(
 	ansibleHostID string,
 ) error {
 	networkFlag := ""
-	switch network {
+	switch network.Kind() {
 	case models.Local:
 		networkFlag = "--local"
 	case models.Devnet:

@@ -44,7 +44,7 @@ func sshNode(_ *cobra.Command, args []string) error {
 			ux.Logger.PrintToUser("There are no clusters defined.")
 		}
 		for clusterName, clusterConfig := range clusterConfig.Clusters {
-			ux.Logger.PrintToUser("Cluster %q (%s)", clusterName, clusterConfig.Network.String())
+			ux.Logger.PrintToUser("Cluster %q (%s)", clusterName, clusterConfig.Network.Kind().String())
 			if err := sshCluster([]string{clusterName}, "  "); err != nil {
 				return err
 			}

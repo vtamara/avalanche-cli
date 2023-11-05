@@ -112,7 +112,7 @@ func statusNode(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		blockchainID := sc.Networks[network.String()].BlockchainID
+		blockchainID := sc.Networks[network.Kind().String()].BlockchainID
 		if blockchainID == ids.Empty {
 			return ErrNoBlockchainID
 		}
@@ -211,7 +211,7 @@ func printOutput(
 			hostIDs[i],
 			nodeIDs[i],
 			ansibleHosts[ansibleHostID].IP,
-			clustersConfig.Clusters[clusterName].Network.String(),
+			clustersConfig.Clusters[clusterName].Network.Kind().String(),
 			avagoVersions[ansibleHostID],
 			boostrappedStatus,
 			healthyStatus,
