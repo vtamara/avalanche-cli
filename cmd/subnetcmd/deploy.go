@@ -70,6 +70,8 @@ var (
 	ErrMutuallyExlusiveKeyLedger = errors.New("key source flags --key, --ledger/--ledger-addrs are mutually exclusive")
 
 	ErrStoredKeyOrEwoqOnMainnet = errors.New("key sources --key, --ewoq are not available for mainnet operations")
+	ErrNonEwoqKeyOnDevnet       = errors.New("key source --ewoq is the only one available for devnet operations")
+	ErrEwoqKeyOnFuji            = errors.New("key source --ewoq is not available for fuji operations")
 	ErrStoredKeyOnMainnet       = errors.New("key --key is not available for mainnet operations")
 )
 
@@ -1016,8 +1018,15 @@ func GetKeychainFromCmdLineFlags(
 		return nil, ErrMutuallyExlusiveKeySource
 	}
 
-	// prompt the user if not on mainnet and no key source was provided
-	if network != models.Mainnet {
+	switch {
+	case network == models.Devnet:
+		// going to just use ewoq atm
+		useEwoq = true
+		if keyName != "" || *useLedger {
+			return nil, ErrNonEwoqKeyOnDevnet
+		}
+	case network == models.Local:
+		// prompt the user if no key source was provided
 		if !*useLedger && !useEwoq && keyName == "" {
 			var err error
 			*useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, keychainGoal, app.GetKeyDir())
@@ -1025,7 +1034,19 @@ func GetKeychainFromCmdLineFlags(
 				return nil, err
 			}
 		}
-	} else {
+	case network == models.Fuji:
+		if useEwoq {
+			return nil, ErrEwoqKeyOnFuji
+		}
+		// prompt the user if no key source was provided
+		if !*useLedger && keyName == "" {
+			var err error
+			*useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, keychainGoal, app.GetKeyDir())
+			if err != nil {
+				return nil, err
+			}
+		}
+	case network == models.Mainnet:
 		// mainnet requires ledger usage
 		if network == models.Mainnet {
 			*useLedger = true
