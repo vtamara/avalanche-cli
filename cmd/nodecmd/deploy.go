@@ -50,34 +50,33 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("node deploy command must be applied to devnet clusters")
 	}
 
-	/*
-		notHealthyNodes, err := checkClusterIsHealthy(clusterName)
+	notHealthyNodes, err := checkClusterIsHealthy(clusterName)
+	if err != nil {
+		return err
+	}
+	if len(notHealthyNodes) > 0 {
+		return fmt.Errorf("node(s) %s are not healthy yet, please try again later", notHealthyNodes)
+	}
+	incompatibleNodes, err := checkAvalancheGoVersionCompatible(clusterName, subnetName)
+	if err != nil {
+		return err
+	}
+	if len(incompatibleNodes) > 0 {
+		sc, err := app.LoadSidecar(subnetName)
 		if err != nil {
 			return err
 		}
-		if len(notHealthyNodes) > 0 {
-			return fmt.Errorf("node(s) %s are not healthy yet, please try again later", notHealthyNodes)
+		ux.Logger.PrintToUser("Either modify your Avalanche Go version or modify your VM version")
+		ux.Logger.PrintToUser("To modify your Avalanche Go version: https://docs.avax.network/nodes/maintain/upgrade-your-avalanchego-node")
+		switch sc.VM {
+		case models.SubnetEvm:
+			ux.Logger.PrintToUser("To modify your Subnet-EVM version: https://docs.avax.network/build/subnet/upgrade/upgrade-subnet-vm")
+		case models.CustomVM:
+			ux.Logger.PrintToUser("To modify your Custom VM binary: avalanche subnet upgrade vm %s --config", subnetName)
 		}
-		incompatibleNodes, err := checkAvalancheGoVersionCompatible(clusterName, subnetName)
-		if err != nil {
-			return err
-		}
-		if len(incompatibleNodes) > 0 {
-			sc, err := app.LoadSidecar(subnetName)
-			if err != nil {
-				return err
-			}
-			ux.Logger.PrintToUser("Either modify your Avalanche Go version or modify your VM version")
-			ux.Logger.PrintToUser("To modify your Avalanche Go version: https://docs.avax.network/nodes/maintain/upgrade-your-avalanchego-node")
-			switch sc.VM {
-			case models.SubnetEvm:
-				ux.Logger.PrintToUser("To modify your Subnet-EVM version: https://docs.avax.network/build/subnet/upgrade/upgrade-subnet-vm")
-			case models.CustomVM:
-				ux.Logger.PrintToUser("To modify your Custom VM binary: avalanche subnet upgrade vm %s --config", subnetName)
-			}
-			return fmt.Errorf("the Avalanche Go version of node(s) %s is incompatible with VM RPC version of %s", incompatibleNodes, subnetName)
-		}
-	*/
+		return fmt.Errorf("the Avalanche Go version of node(s) %s is incompatible with VM RPC version of %s", incompatibleNodes, subnetName)
+	}
+
 	if err := deploy(clusterName, subnetName, models.Devnet); err != nil {
 		return err
 	}
