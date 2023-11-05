@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/ava-labs/avalanche-cli/cmd/flags"
 	"github.com/ava-labs/avalanche-cli/pkg/constants"
 	"github.com/ava-labs/avalanche-cli/pkg/models"
 	"github.com/ava-labs/avalanche-cli/pkg/prompts"
@@ -69,60 +68,43 @@ Testnet or Mainnet.`,
 	return cmd
 }
 
+func addValidator(_ *cobra.Command, args []string) error {
+	network, err := GetNetworkFromCmdLineFlags(
+		deployLocal,
+		deployDevnet,
+		deployTestnet,
+		deployMainnet,
+		[]models.Network{models.Local, models.Devnet, models.Fuji, models.Mainnet},
+	)
+	if err != nil {
+		return err
+	}
+	kc, err := GetKeychainFromCmdLineFlags(
+		"pay transaction fees",
+		network,
+		keyName,
+		useEwoq,
+		&useLedger,
+		ledgerAddresses,
+	)
+	if err != nil {
+		return err
+	}
+	return CallAddValidator(network, kc, useLedger, args[0], nodeIDStr)
+}
+
 func CallAddValidator(
 	network models.Network,
 	kc keychain.Keychain,
 	useLedger bool,
 	subnetName string,
-	nodeID string,
+	nodeIDStr string,
 ) error {
-	switch network {
-	case models.Mainnet:
-		deployMainnet = true
-	case models.Fuji:
-		deployTestnet = true
-	case models.Devnet:
-		deployDevnet = true
-	case models.Local:
-		deployLocal = true
-	}
-	nodeIDStr = nodeID
-	return addValidator(nil, []string{subnetName})
-}
-
-func addValidator(_ *cobra.Command, args []string) error {
 	var (
 		nodeID ids.NodeID
 		start  time.Time
 		err    error
 	)
-
-	if !flags.EnsureMutuallyExclusive([]bool{deployLocal, deployDevnet, deployTestnet, deployMainnet}) {
-		return errMutuallyExlusiveNetworksWithDevnet
-	}
-
-	var network models.Network
-	switch {
-	case deployLocal:
-		network = models.Local
-	case deployDevnet:
-		network = models.Devnet
-	case deployTestnet:
-		network = models.Fuji
-	case deployMainnet:
-		network = models.Mainnet
-	}
-
-	if network == models.Undefined {
-		networkStr, err := app.Prompt.CaptureList(
-			"Choose a network to add validator to.",
-			[]string{models.Fuji.String(), models.Mainnet.String(), models.Devnet.String(), models.Local.String()},
-		)
-		if err != nil {
-			return err
-		}
-		network = models.NetworkFromString(networkStr)
-	}
 
 	if outputTxPath != "" {
 		if _, err := os.Stat(outputTxPath); err == nil {
@@ -130,54 +112,17 @@ func addValidator(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	if len(ledgerAddresses) > 0 {
-		useLedger = true
-	}
-
-	if !flags.EnsureMutuallyExclusive([]bool{useLedger, useEwoq, keyName != ""}) {
-		return ErrMutuallyExlusiveKeySource
-	}
-
-	switch network {
-	case models.Devnet:
-		if !useLedger && !useEwoq && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "pay transaction fees", app.GetKeyDir())
-			if err != nil {
-				return err
-			}
-		}
-	case models.Fuji:
-		if !useLedger && !useEwoq && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "pay transaction fees", app.GetKeyDir())
-			if err != nil {
-				return err
-			}
-		}
-	case models.Mainnet:
-		useLedger = true
-		if keyName != "" || useEwoq {
-			return ErrStoredKeyOrEwoqOnMainnet
-		}
-	default:
-		return errors.New("unsupported network")
-	}
-
 	// used in E2E to simulate public network execution paths on a local network
 	if os.Getenv(constants.SimulatePublicNetwork) != "" {
 		network = models.Local
 	}
 
-	// get keychain accesor
-	kc, err := GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
+	chains, err := ValidateSubnetNameAndGetChains([]string{subnetName})
 	if err != nil {
 		return err
 	}
+	subnetName = chains[0]
 
-	chains, err := ValidateSubnetNameAndGetChains(args)
-	if err != nil {
-		return err
-	}
-	subnetName := chains[0]
 	sc, err := app.LoadSidecar(subnetName)
 	if err != nil {
 		return err
