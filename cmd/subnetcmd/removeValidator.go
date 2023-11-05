@@ -98,7 +98,7 @@ func removeValidator(_ *cobra.Command, args []string) error {
 		return removeFromLocal(subnetName)
 	case models.Fuji:
 		if !useLedger && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
 			}

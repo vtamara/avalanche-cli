@@ -131,7 +131,7 @@ func addPermissionlessDelegator(_ *cobra.Command, args []string) error {
 		return handleAddPermissionlessDelegatorLocal(subnetName, network, nodeID, stakedTokenAmount, start, endTime)
 	case models.Fuji:
 		if !useLedger && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
 			}

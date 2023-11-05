@@ -82,17 +82,17 @@ func intoDevnet(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	if !useLedger && !useEwoq && keyName == "" {
-		useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "as devnet founded key", app.GetKeyDir())
-		if err != nil {
-			return err
-		}
-	}
-
 	network := models.Devnet
 	networkID, err := network.NetworkID()
 	if err != nil {
 		return err
+	}
+
+	if !useLedger && !useEwoq && keyName == "" {
+		useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "as devnet founded key", app.GetKeyDir())
+		if err != nil {
+			return err
+		}
 	}
 
 	k, err := key.NewSoft(networkID)

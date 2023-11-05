@@ -75,7 +75,7 @@ func signTx(_ *cobra.Command, args []string) error {
 	switch network {
 	case models.Fuji, models.Local:
 		if !useLedger && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "sign transaction", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "sign transaction", app.GetKeyDir())
 			if err != nil {
 				return err
 			}

@@ -1020,7 +1020,7 @@ func GetKeychainFromCmdLineFlags(
 	if network != models.Mainnet {
 		if !*useLedger && !useEwoq && keyName == "" {
 			var err error
-			*useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, keychainGoal, app.GetKeyDir())
+			*useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, keychainGoal, app.GetKeyDir())
 			if err != nil {
 				return nil, err
 			}

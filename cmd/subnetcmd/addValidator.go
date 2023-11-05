@@ -134,14 +134,14 @@ func addValidator(_ *cobra.Command, args []string) error {
 	switch network {
 	case models.Devnet:
 		if !useLedger && !useEwoq && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
 			}
 		}
 	case models.Fuji:
 		if !useLedger && !useEwoq && keyName == "" {
-			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, "pay transaction fees", app.GetKeyDir())
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, "pay transaction fees", app.GetKeyDir())
 			if err != nil {
 				return err
 			}

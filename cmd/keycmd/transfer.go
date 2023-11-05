@@ -203,7 +203,7 @@ func transferF(*cobra.Command, []string) error {
 		} else {
 			goalStr = " for the receiver address"
 		}
-		useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, goalStr, app.GetKeyDir())
+		useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, goalStr, app.GetKeyDir())
 		if err != nil {
 			return err
 		}

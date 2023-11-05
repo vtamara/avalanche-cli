@@ -95,7 +95,7 @@ type Prompter interface {
 	CaptureUint64Compare(promptStr string, comparators []Comparator) (uint64, error)
 	CapturePChainAddress(promptStr string, network models.Network) (string, error)
 	CaptureFutureDate(promptStr string, minDate time.Time) (time.Time, error)
-	ChooseEwoqKeyOrLedger(goal string) (string, error)
+	ChooseEwoqKeyOrLedger(network models.Network, goal string) (string, error)
 }
 
 type realPrompter struct{}
@@ -683,15 +683,19 @@ func (*realPrompter) CaptureFutureDate(promptStr string, minDate time.Time) (tim
 }
 
 // returns "key" or "ledger" or "ewoq" or ""
-func (prompter *realPrompter) ChooseEwoqKeyOrLedger(goal string) (string, error) {
+func (prompter *realPrompter) ChooseEwoqKeyOrLedger(network models.Network, goal string) (string, error) {
 	const (
 		keyOption    = "Use stored key"
 		ledgerOption = "Use ledger"
 		ewoqOption   = "Use ewoq"
 	)
+	options := []string{keyOption, ledgerOption, ewoqOption}
+	if network == models.Fuji {
+		options = []string{keyOption, ledgerOption}
+	}
 	option, err := prompter.CaptureList(
 		fmt.Sprintf("Which key source should be used to %s?", goal),
-		[]string{keyOption, ledgerOption, ewoqOption},
+		options,
 	)
 	if err != nil {
 		return "", err
@@ -786,8 +790,8 @@ func GetSubnetAuthKeys(prompt Prompter, walletKey string, controlKeys []string, 
 	return subnetAuthKeys, nil
 }
 
-func GetEwoqKeyOrLedger(prompt Prompter, goal string, keyDir string) (bool, bool, string, error) {
-	option, err := prompt.ChooseEwoqKeyOrLedger(goal)
+func GetEwoqKeyOrLedger(prompt Prompter, network models.Network, goal string, keyDir string) (bool, bool, string, error) {
+	option, err := prompt.ChooseEwoqKeyOrLedger(network, goal)
 	if err != nil {
 		return false, false, "", err
 	}
