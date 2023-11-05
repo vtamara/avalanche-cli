@@ -61,14 +61,16 @@ var (
 	mainnetChainID           string
 	skipCreatePrompt         bool
 
-	errMutuallyExlusiveNetworksWithDevnet = errors.New("--local, --devnet, --fuji/--testnet and --mainnet are mutually exclusive")
+	errMutuallyExlusiveNetworks           = errors.New("--local, --fuji/--testnet, --mainnet are mutually exclusive")
+	errMutuallyExlusiveNetworksWithDevnet = errors.New("--local, --devnet, --fuji/--testnet, --mainnet are mutually exclusive")
 
-	errMutuallyExlusiveNetworks    = errors.New("--local, --fuji (resp. --testnet) and --mainnet are mutually exclusive")
 	errMutuallyExlusiveControlKeys = errors.New("--control-keys and --same-control-key are mutually exclusive")
-	ErrMutuallyExlusiveKeySource   = errors.New("--key, --ewoq and --ledger/--ledger-addrs are mutually exclusive")
-	ErrMutuallyExlusiveKeyLedger   = errors.New("--key and --ledger,--ledger-addrs are mutually exclusive")
-	ErrStoredKeyOnMainnet          = errors.New("--key is not available for mainnet operations")
-	ErrStoredKeyOrEwoqOnMainnet    = errors.New("--key and --ewoq are not available for mainnet operations")
+
+	ErrMutuallyExlusiveKeySource = errors.New("key source flags --key, --ewoq, --ledger/--ledger-addrs are mutually exclusive")
+	ErrMutuallyExlusiveKeyLedger = errors.New("key source flags --key, --ledger/--ledger-addrs are mutually exclusive")
+
+	ErrStoredKeyOrEwoqOnMainnet = errors.New("key sources --key, --ewoq are not available for mainnet operations")
+	ErrStoredKeyOnMainnet       = errors.New("key --key is not available for mainnet operations")
 )
 
 // avalanche subnet deploy
@@ -1022,4 +1024,50 @@ func GetNetworkFromCmdLineFlags(
 	}
 
 	return network, nil
+}
+
+func GetKeychainFromCmdLineFlags(
+	keychainGoal string,
+	network models.Network,
+	keyName string,
+	useEwoq bool,
+	useLedger bool,
+	ledgerAddresses []string,
+) (keychain.Keychain, error) {
+	// set ledger usage flag if ledger addresses are given
+	if len(ledgerAddresses) > 0 {
+		useLedger = true
+	}
+
+	// check mutually exclusive flags
+	if !flags.EnsureMutuallyExclusive([]bool{useLedger, useEwoq, keyName != ""}) {
+		return nil, ErrMutuallyExlusiveKeySource
+	}
+
+	// prompt the user if not on mainnet and no key source was provided
+	if network != models.Mainnet {
+		if !useLedger && !useEwoq && keyName == "" {
+			var err error
+			useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, keychainGoal, app.GetKeyDir())
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		// mainnet requires ledger usage
+		if network == models.Mainnet {
+			useLedger = true
+			if keyName != "" || useEwoq {
+				return nil, ErrStoredKeyOrEwoqOnMainnet
+			}
+		}
+	}
+
+	// will use default local keychain if simulating public network opeations on local
+	if os.Getenv(constants.SimulatePublicNetwork) != "" {
+		network = models.Local
+	}
+
+	// get keychain accessor
+	return GetKeychain(useEwoq, useLedger, ledgerAddresses, keyName, network)
 }
