@@ -190,9 +190,9 @@ func RunAnsiblePlaybookCopyStakingFiles(ansibleDir, ansibleHostIDs, nodesDirPath
 	return cmdErr
 }
 
-func RunAnsiblePlaybookSetDevnet(ansibleDir, ansibleHostIDs, nodesDirPath, inventoryPath string) error {
+func RunAnsiblePlaybookSetupDevnet(ansibleDir, ansibleHostIDs, nodesDirPath, inventoryPath string) error {
 	playbookInputs := "target=" + ansibleHostIDs + " nodesDirPath=" + nodesDirPath + "/"
-	cmd := exec.Command(constants.AnsiblePlaybook, constants.SetDevnetPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
+	cmd := exec.Command(constants.AnsiblePlaybook, constants.SetupDevnetPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
 	cmd.Dir = ansibleDir
 	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
 	cmdErr := cmd.Run()
