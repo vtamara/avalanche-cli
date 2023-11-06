@@ -172,7 +172,7 @@ func setupDevnet(clusterName string) error {
 	for i, ansibleHostID := range ansibleHostIDs {
 		cloudHostID := cloudHostIDs[i]
 		confMap := map[string]interface{}{}
-		confMap[config.NetworkNameKey] = network.Id
+		confMap[config.NetworkNameKey] = fmt.Sprintf("network-%d", network.Id)
 		confMap[config.PublicIPKey] = ansibleHosts[ansibleHostID].IP
 		confMap[config.BootstrapIDsKey] = strings.Join(bootstrapIDs, ",")
 		confMap[config.BootstrapIPsKey] = strings.Join(bootstrapIPs, ",")
