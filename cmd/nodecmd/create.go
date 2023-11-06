@@ -233,6 +233,14 @@ func createNodes(_ *cobra.Command, args []string) error {
 	if err = setupBuildEnv(inventoryPath, createdAnsibleHostIDs); err != nil {
 		return err
 	}
+
+	if network.Kind == models.Devnet {
+		ux.Logger.PrintToUser("Setting up Devnet ...")
+		if err := setupDevnet(clusterName); err != nil {
+			return err
+		}
+	}
+
 	printResults(cloudConfig, publicIPMap, ansibleHostIDs)
 	ux.Logger.PrintToUser("AvalancheGo and Avalanche-CLI installed and node(s) are bootstrapping!")
 	return nil
