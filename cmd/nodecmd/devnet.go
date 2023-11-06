@@ -38,25 +38,38 @@ will apply to all nodes in the cluster`,
 // difference between unlock schedule locktime and startime in original genesis
 const genesisLocktimeStartimeDelta = 2836800
 
-//go:embed genesis_template.json
-var genesisTemplateBytes []byte
+func generateCustomCchainGenesis() ([]byte, error) {
+	cChainGenesisMap := map[string]interface{}{}
+	cChainGenesisMap["config"] = coreth_params.AvalancheLocalChainConfig
+	cChainGenesisMap["nonce"] = "0x0"
+	cChainGenesisMap["timestamp"] = "0x0"
+	cChainGenesisMap["extraData"] = "0x00"
+	cChainGenesisMap["gasLimit"] = "0x5f5e100"
+	cChainGenesisMap["difficulty"] = "0x0"
+	cChainGenesisMap["mixHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+	cChainGenesisMap["coinbase"] = "0x0000000000000000000000000000000000000000"
+	cChainGenesisMap["alloc"] = map[string]interface{}{
+		"8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC": map[string]interface{}{
+			"balance": "0x295BE96E64066972000000",
+		},
+	}
+	cChainGenesisMap["number"] = "0x0"
+	cChainGenesisMap["gasUsed"] = "0x0"
+	cChainGenesisMap["parentHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+	return json.Marshal(cChainGenesisMap)
+}
 
 func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr string, nodeIDs []string) ([]byte, error) {
 	genesisMap := map[string]interface{}{}
-	if err := json.Unmarshal(genesisTemplateBytes, &genesisMap); err != nil {
-		return nil, err
-	}
-	cChainGenesis := genesisMap["cChainGenesis"]
-	cChainGenesisMap, ok := cChainGenesis.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("expected field 'cChainGenesis' of genesisMap to be a map[string]interface{}, but it failed with type %T", cChainGenesis)
-	}
-	cChainGenesisMap["config"] = coreth_params.AvalancheLocalChainConfig
-	cChainGenesisBytes, err := json.Marshal(cChainGenesisMap)
+
+	// cchain
+	cChainGenesisBytes, err := generateCustomCchainGenesis()
 	if err != nil {
 		return nil, err
 	}
 	genesisMap["cChainGenesis"] = string(cChainGenesisBytes)
+
+	// pchain genesis
 	genesisMap["networkID"] = networkID
 	startTime := time.Now().Unix()
 	genesisMap["startTime"] = startTime
@@ -69,6 +82,8 @@ func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr stri
 		}
 		initialStakers = append(initialStakers, initialStaker)
 	}
+	genesisMap["initialStakeDuration"] = 31536000
+	genesisMap["initialStakeDurationOffset"] = 5400
 	genesisMap["initialStakers"] = initialStakers
 	lockTime := startTime + genesisLocktimeStartimeDelta
 	allocations := []interface{}{}
@@ -95,12 +110,9 @@ func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr stri
 	genesisMap["initialStakedFunds"] = []interface{}{
 		stakingAddr,
 	}
+	genesisMap["message"] = "{{ fun_quote }}"
 
-	updatedGenesis, err := json.MarshalIndent(genesisMap, "", " ")
-	if err != nil {
-		return nil, err
-	}
-	return updatedGenesis, nil
+	return json.MarshalIndent(genesisMap, "", " ")
 }
 
 func devnetCmd(_ *cobra.Command, args []string) error {
@@ -172,12 +184,12 @@ func setupDevnet(clusterName string) error {
 	for i, ansibleHostID := range ansibleHostIDs {
 		cloudHostID := cloudHostIDs[i]
 		confMap := map[string]interface{}{}
-		confMap[config.NetworkNameKey] = fmt.Sprintf("network-%d", network.Id)
+		confMap[config.HTTPHostKey] = ""
 		confMap[config.PublicIPKey] = ansibleHosts[ansibleHostID].IP
+		confMap[config.NetworkNameKey] = fmt.Sprintf("network-%d", network.Id)
 		confMap[config.BootstrapIDsKey] = strings.Join(bootstrapIDs, ",")
 		confMap[config.BootstrapIPsKey] = strings.Join(bootstrapIPs, ",")
 		confMap[config.GenesisFileKey] = "/home/ubuntu/.avalanchego/configs/genesis.json"
-		confMap[config.HTTPHostKey] = ""
 		bootstrapIDs = append(bootstrapIDs, nodeIDs[i])
 		bootstrapIPs = append(bootstrapIPs, ansibleHosts[ansibleHostID].IP+":9651")
 		confBytes, err := json.MarshalIndent(confMap, "", " ")
@@ -190,7 +202,7 @@ func setupDevnet(clusterName string) error {
 		}
 	}
 
-	// update node/s genesis + conf and start them
+	// update node/s genesis + conf and start
 	if err := ansible.RunAnsiblePlaybookSetupDevnet(
 		app.GetAnsibleDir(),
 		strings.Join(ansibleHostIDs, ","),

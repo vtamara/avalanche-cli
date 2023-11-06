@@ -10,17 +10,18 @@
         path: "/home/ubuntu/.avalanchego/configs/"
         state: directory
         recurse: yes
-    - name: copy genesis.json to remote machine
+    - name: copy genesis and avalanchego config to remote machine
       copy:
-        dest: /home/ubuntu/.avalanchego/configs/genesis.json
-        src: "{{ nodesDirPath }}{{ host_id.stdout }}/genesis.json"
-    - name: copy node.json to remote machine
-      copy:
-        dest: /home/ubuntu/.avalanchego/configs/node.json
-        src: "{{ nodesDirPath }}{{ host_id.stdout }}/node.json"
+        src: "{{ item }}"
+        dest: /home/ubuntu/.avalanchego/configs/
+      loop:
+        - "{{ nodesDirPath }}{{ host_id.stdout }}/genesis.json"
+        - "{{ nodesDirPath }}{{ host_id.stdout }}/node.json"
     - name: stop node
       shell: sudo systemctl stop avalanchego
-    - name: remove previous db
-      shell: rm -rf /home/ubuntu/.avalanchego/db/
+    - name: remove previous avalanchego db and logs
+      shell: |
+        rm -rf /home/ubuntu/.avalanchego/db/
+        rm -rf /home/ubuntu/.avalanchego/logs/
     - name: start node
       shell: sudo systemctl start avalanchego
