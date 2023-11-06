@@ -10,7 +10,7 @@
       shell: ./avalanchego-installer.sh --ip static --rpc private --state-sync on --fuji --version {{ avalancheGoVersion }}
     - name: stop node if devnet
       shell: sudo systemctl stop avalanchego
-      when: "{{ setDevnet }} == true"
+      when: setDevnet == "true"
     - name: get avalanche cli install script
       shell: wget -nd -m https://raw.githubusercontent.com/ava-labs/avalanche-cli/main/scripts/install.sh
     - name: modify permissions
