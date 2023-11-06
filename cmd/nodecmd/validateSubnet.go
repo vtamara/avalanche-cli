@@ -53,6 +53,8 @@ You can check the subnet sync status by calling avalanche node status <clusterNa
 
 	cmd.Flags().Uint64Var(&weight, "stake-amount", 0, "how many AVAX to stake in the validator")
 	cmd.Flags().DurationVar(&duration, "staking-period", 0, "how long validator validates for after start time")
+	cmd.Flags().StringVar(&startTimeStr, "start-time", "", "UTC start time when this validator starts validating, in 'YYYY-MM-DD HH:MM:SS' format")
+	cmd.Flags().BoolVar(&defaultValidator, "default-validator", false, "use default weight/start/duration params for subnet validator")
 
 	return cmd
 }
@@ -80,7 +82,14 @@ func parseSubnetSyncOutput(filePath string) (string, error) {
 
 func addNodeAsSubnetValidator(network models.Network, kc keychain.Keychain, useLedger bool, nodeID, subnetName string, currentNodeIndex, nodeCount int) error {
 	ux.Logger.PrintToUser("Adding the node as a Subnet Validator...")
-	if err := subnetcmd.CallAddValidator(network, kc, useLedger, subnetName, nodeID); err != nil {
+	if err := subnetcmd.CallAddValidator(
+		network,
+		kc,
+		useLedger,
+		subnetName,
+		nodeID,
+		defaultValidator,
+	); err != nil {
 		return err
 	}
 	ux.Logger.PrintToUser("Node %s successfully added as Subnet validator! (%d / %d)", nodeID, currentNodeIndex+1, nodeCount)

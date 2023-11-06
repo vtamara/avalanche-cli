@@ -23,10 +23,11 @@ import (
 )
 
 var (
-	nodeIDStr    string
-	weight       uint64
-	startTimeStr string
-	duration     time.Duration
+	nodeIDStr        string
+	weight           uint64
+	startTimeStr     string
+	duration         time.Duration
+	defaultValidator bool
 
 	errNoSubnetID = errors.New("failed to find the subnet ID for this subnet, has it been deployed/created on this network?")
 )
@@ -54,6 +55,8 @@ Testnet or Mainnet.`,
 	cmd.Flags().StringVar(&nodeIDStr, "nodeID", "", "set the NodeID of the validator to add")
 	cmd.Flags().Uint64Var(&weight, "weight", 0, "set the staking weight of the validator to add")
 	cmd.Flags().StringVar(&startTimeStr, "start-time", "", "UTC start time when this validator starts validating, in 'YYYY-MM-DD HH:MM:SS' format")
+	cmd.Flags().BoolVar(&defaultValidator, "default-validator", false, "use default weight/start/duration params for subnet validator")
+
 	cmd.Flags().DurationVar(&duration, "staking-period", 0, "how long this validator will be staking")
 	cmd.Flags().StringVar(&endpoint, "endpoint", "", "use the given endpoint for network operations")
 	cmd.Flags().BoolVar(&deployLocal, "local", false, "add subnet validator on `local`")
@@ -92,21 +95,25 @@ func addValidator(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return CallAddValidator(network, kc, useLedger, args[0], nodeIDStr)
+	return CallAddValidator(network, kc, useLedger, args[0], nodeIDStr, defaultValidator)
 }
 
 func CallAddValidator(
 	network models.Network,
 	kc keychain.Keychain,
-	useLedger bool,
+	useLedgerParam bool,
 	subnetName string,
 	nodeIDStr string,
+	defaultValidatorParam bool,
 ) error {
 	var (
 		nodeID ids.NodeID
 		start  time.Time
 		err    error
 	)
+
+	useLedger = useLedgerParam
+	defaultValidator = defaultValidatorParam
 
 	if outputTxPath != "" {
 		if _, err := os.Stat(outputTxPath); err == nil {
@@ -345,7 +352,7 @@ func PromptNodeID() (ids.NodeID, error) {
 
 func PromptWeight() (uint64, error) {
 	defaultWeight := fmt.Sprintf("Default (%d)", constants.DefaultStakeWeight)
-	txt := "What stake weight would you like to assign to the validator?"
+	txt := "What stake weight Pepe would you like to assign to the validator?"
 	weightOptions := []string{defaultWeight, "Custom"}
 
 	weightOption, err := app.Prompt.CaptureList(txt, weightOptions)

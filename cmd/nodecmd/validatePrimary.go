@@ -45,6 +45,7 @@ var (
 	weight                       uint64
 	startTimeStr                 string
 	duration                     time.Duration
+	defaultValidator             bool
 	useCustomDuration            bool
 	ErrMutuallyExlusiveKeyLedger = errors.New("--key and --ledger,--ledger-addrs are mutually exclusive")
 	ErrStoredKeyOnMainnet        = errors.New("--key is not available for mainnet operations")
