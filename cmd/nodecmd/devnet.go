@@ -22,19 +22,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newDevnetCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "devnet [clusterName]",
-		Short: "(ALPHA Warning) Create a new validator on cloud server",
-		Long: `(ALPHA Warning) This command is currently in experimental mode. 
-will apply to all nodes in the cluster`,
-		SilenceUsage: true,
-		Args:         cobra.ExactArgs(1),
-		RunE:         devnetCmd,
-	}
-	return cmd
-}
-
 // difference between unlock schedule locktime and startime in original genesis
 const genesisLocktimeStartimeDelta = 2836800
 
