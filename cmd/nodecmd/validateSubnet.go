@@ -40,6 +40,7 @@ You can check the subnet sync status by calling avalanche node status <clusterNa
 		RunE:         validateSubnet,
 	}
 
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "use the given endpoint for network operations")
 	cmd.Flags().BoolVarP(&deployDevnet, "devnet", "d", false, "set up validator in devnet")
 	cmd.Flags().BoolVarP(&deployTestnet, "testnet", "t", false, "set up validator in testnet (alias to `fuji`)")
 	cmd.Flags().BoolVarP(&deployTestnet, "fuji", "f", false, "set up validator in fuji (alias to `testnet`")
@@ -138,17 +139,12 @@ func validateSubnet(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	network, err := subnetcmd.GetNetworkFromCmdLineFlags(
-		false,
-		deployDevnet,
-		deployTestnet,
-		deployMainnet,
-		endpoint,
-		[]models.NetworkKind{models.Devnet, models.Fuji},
-	)
+	clusterConfig, err := app.LoadClustersConfig()
 	if err != nil {
 		return err
 	}
+	network := clusterConfig.Clusters[clusterName].Network
+
 	kc, err := subnetcmd.GetKeychainFromCmdLineFlags(
 		"pay transaction fees",
 		network,

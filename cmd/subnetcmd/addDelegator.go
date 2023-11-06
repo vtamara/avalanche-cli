@@ -47,6 +47,7 @@ these prompts by providing the values with flags.`,
 	}
 	cmd.Flags().StringVarP(&keyName, "key", "k", "", "select the key to use [fuji deploy only]")
 	cmd.Flags().StringVar(&nodeIDStr, "nodeID", "", "set the NodeID of the validator to delegate to")
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "use the given endpoint for network operations")
 	cmd.Flags().BoolVar(&deployTestnet, "fuji", false, "join on `fuji` (alias for `testnet`)")
 	cmd.Flags().BoolVar(&deployTestnet, "testnet", false, "join on `testnet` (alias for `fuji`)")
 	cmd.Flags().BoolVar(&deployMainnet, "mainnet", false, "join on `mainnet`")

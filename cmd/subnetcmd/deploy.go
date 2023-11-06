@@ -119,25 +119,25 @@ so you can take your locally tested Subnet and deploy it on Fuji or Mainnet.`,
 
 func CallDeploy(
 	subnetName string,
-	lDeployLocal bool,
-	lDeployTestnet bool,
-	lDdeployMainnet bool,
-	lDeployDevnet bool,
-	lEndpoint string,
-	lSameControlKey bool,
-	lKeyName string,
-	lUseLedger bool,
-	lUseEwoq bool,
+	deployLocalParam bool,
+	deployDevnetParam bool,
+	deployTestnetParam bool,
+	ddeployMainnetParam bool,
+	endpointParam string,
+	keyNameParam string,
+	useLedgerParam bool,
+	useEwoqParam bool,
+	sameControlKeyParam bool,
 ) error {
-	deployLocal = lDeployLocal
-	deployTestnet = lDeployTestnet
-	deployMainnet = lDdeployMainnet
-	deployDevnet = lDeployDevnet
-	endpoint = lEndpoint
-	sameControlKey = lSameControlKey
-	keyName = lKeyName
-	useLedger = lUseLedger
-	useEwoq = lUseEwoq
+	deployLocal = deployLocalParam
+	deployTestnet = deployTestnetParam
+	deployMainnet = ddeployMainnetParam
+	deployDevnet = deployDevnetParam
+	endpoint = endpointParam
+	sameControlKey = sameControlKeyParam
+	keyName = keyNameParam
+	useLedger = useLedgerParam
+	useEwoq = useEwoqParam
 	return deploySubnet(nil, []string{subnetName})
 }
 

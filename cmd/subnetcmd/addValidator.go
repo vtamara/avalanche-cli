@@ -55,6 +55,7 @@ Testnet or Mainnet.`,
 	cmd.Flags().Uint64Var(&weight, "weight", 0, "set the staking weight of the validator to add")
 	cmd.Flags().StringVar(&startTimeStr, "start-time", "", "UTC start time when this validator starts validating, in 'YYYY-MM-DD HH:MM:SS' format")
 	cmd.Flags().DurationVar(&duration, "staking-period", 0, "how long this validator will be staking")
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "use the given endpoint for network operations")
 	cmd.Flags().BoolVar(&deployLocal, "local", false, "add subnet validator on `local`")
 	cmd.Flags().BoolVar(&deployDevnet, "devnet", false, "add subnet validator on `devnet`")
 	cmd.Flags().BoolVar(&deployTestnet, "fuji", false, "add subnet validator on `fuji` (alias for `testnet`)")
