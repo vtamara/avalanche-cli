@@ -269,6 +269,15 @@ func getTimeParameters(network models.Network, nodeID ids.NodeID, isValidator bo
 		err   error
 	)
 
+	if defaultValidator {
+		start = time.Now().Add(constants.StakingStartLeadTime)
+		duration, err = getMaxValidationTime(network, nodeID, start)
+		if err != nil {
+			return time.Time{}, 0, err
+		}
+		return start, duration, nil
+	}
+
 	const (
 		defaultStartOption    = "Start in five minutes"
 		defaultDurationOption = "Until primary network validator expires"
@@ -351,8 +360,11 @@ func PromptNodeID() (ids.NodeID, error) {
 }
 
 func PromptWeight() (uint64, error) {
+	if defaultValidator {
+		return constants.DefaultStakeWeight, nil
+	}
 	defaultWeight := fmt.Sprintf("Default (%d)", constants.DefaultStakeWeight)
-	txt := "What stake weight Pepe would you like to assign to the validator?"
+	txt := "What stake weight would you like to assign to the validator?"
 	weightOptions := []string{defaultWeight, "Custom"}
 
 	weightOption, err := app.Prompt.CaptureList(txt, weightOptions)
