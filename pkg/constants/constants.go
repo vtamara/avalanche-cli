@@ -119,7 +119,6 @@ const (
 	AnsiblePlaybook                              = "ansible-playbook"
 	SetupNodePlaybook                            = "playbook/setupNode.yml"
 	CopyStakingFilesPlaybook                     = "playbook/copyStakingFiles.yml"
-	TestPlaybook                                 = "playbook/test.yml"
 	SetupDevnetPlaybook                          = "playbook/setupDevnet.yml"
 	ExportSubnetPlaybook                         = "playbook/exportSubnet.yml"
 	IsBootstrappedPlaybook                       = "playbook/isBootstrapped.yml"
