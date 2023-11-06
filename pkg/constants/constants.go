@@ -94,6 +94,7 @@ const (
 	DefaultMainnetStakeDuration = "336h"
 	// The absolute minimum is 25 seconds, but set to 1 minute to allow for
 	// time to go through the command
+	DevnetStakingStartLeadTime                   = 30 * time.Second
 	StakingStartLeadTime                         = 5 * time.Minute
 	StakingMinimumLeadTime                       = 25 * time.Second
 	PrimaryNetworkValidatingStartLeadTimeNodeCmd = 20 * time.Second

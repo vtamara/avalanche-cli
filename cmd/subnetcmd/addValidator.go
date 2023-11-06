@@ -269,8 +269,13 @@ func getTimeParameters(network models.Network, nodeID ids.NodeID, isValidator bo
 		err   error
 	)
 
+	defaultStakingStartLeadTime := constants.StakingStartLeadTime
+	if network.Kind == models.Devnet {
+		defaultStakingStartLeadTime = constants.DevnetStakingStartLeadTime
+	}
+
 	if defaultValidator {
-		start = time.Now().Add(constants.StakingStartLeadTime)
+		start = time.Now().Add(defaultStakingStartLeadTime)
 		duration, err = getMaxValidationTime(network, nodeID, start)
 		if err != nil {
 			return time.Time{}, 0, err
@@ -300,7 +305,7 @@ func getTimeParameters(network models.Network, nodeID ids.NodeID, isValidator bo
 
 		switch startTimeOption {
 		case defaultStartOption:
-			start = time.Now().Add(constants.StakingStartLeadTime)
+			start = time.Now().Add(defaultStakingStartLeadTime)
 		default:
 			start, err = promptStart()
 			if err != nil {
