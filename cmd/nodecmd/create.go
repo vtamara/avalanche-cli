@@ -227,7 +227,7 @@ func createNodes(_ *cobra.Command, args []string) error {
 		return err
 	}
 	createdAnsibleHostIDs := strings.Join(ansibleHostIDs, ",")
-	if err = runAnsible(inventoryPath, avalancheGoVersion, clusterName, createdAnsibleHostIDs); err != nil {
+	if err = runAnsible(network, inventoryPath, avalancheGoVersion, clusterName, createdAnsibleHostIDs); err != nil {
 		return err
 	}
 	if err = setupBuildEnv(inventoryPath, createdAnsibleHostIDs); err != nil {
@@ -327,14 +327,21 @@ func setupAnsible(clusterName string) error {
 	return updateAnsiblePublicIPs(clusterName)
 }
 
-func runAnsible(inventoryPath, avalancheGoVersion, clusterName, ansibleHostIDs string) error {
+func runAnsible(network models.Network, inventoryPath, avalancheGoVersion, clusterName, ansibleHostIDs string) error {
 	if err := setupAnsible(clusterName); err != nil {
 		return err
 	}
 	if err := distributeStakingCertAndKey(strings.Split(ansibleHostIDs, ","), inventoryPath); err != nil {
 		return err
 	}
-	return ansible.RunAnsiblePlaybookSetupNode(app.GetConfigPath(), app.GetAnsibleDir(), inventoryPath, avalancheGoVersion, ansibleHostIDs)
+	return ansible.RunAnsiblePlaybookSetupNode(
+		app.GetConfigPath(),
+		app.GetAnsibleDir(),
+		inventoryPath,
+		avalancheGoVersion,
+		fmt.Sprint(network.Kind == models.Devnet),
+		ansibleHostIDs,
+	)
 }
 
 func setupBuildEnv(inventoryPath, ansibleHostIDs string) error {

@@ -157,8 +157,8 @@ func WriteCfgFile(ansibleDir string) error {
 // RunAnsiblePlaybookSetupNode installs avalanche go and avalanche-cli. It also copies the user's
 // metric preferences in configFilePath from local machine to cloud server
 // targets all hosts in ansible inventory file
-func RunAnsiblePlaybookSetupNode(configPath, ansibleDir, inventoryPath, avalancheGoVersion, ansibleHostIDs string) error {
-	playbookInputs := "target=" + ansibleHostIDs + " configFilePath=" + configPath + " avalancheGoVersion=" + avalancheGoVersion
+func RunAnsiblePlaybookSetupNode(configPath, ansibleDir, inventoryPath, avalancheGoVersion, setDevnet, ansibleHostIDs string) error {
+	playbookInputs := "target=" + ansibleHostIDs + " configFilePath=" + configPath + " avalancheGoVersion=" + avalancheGoVersion + " setDevnet=" + setDevnet
 	cmd := exec.Command(constants.AnsiblePlaybook, constants.SetupNodePlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
 	cmd.Dir = ansibleDir
 	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
