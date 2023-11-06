@@ -163,7 +163,7 @@ func transferF(*cobra.Command, []string) error {
 	if mainnet {
 		network = models.MainnetNetwork
 	}
-	if network == models.UndefinedNetwork {
+	if network.Kind == models.Undefined {
 		// no flag was set, prompt user
 		networkStr, err := app.Prompt.CaptureList(
 			"Network to use",
