@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ava-labs/avalanche-cli/cmd/subnetcmd"
 	"github.com/ava-labs/avalanche-cli/pkg/ansible"
 	awsAPI "github.com/ava-labs/avalanche-cli/pkg/aws"
 	gcpAPI "github.com/ava-labs/avalanche-cli/pkg/gcp"
@@ -39,6 +40,9 @@ const (
 )
 
 var (
+	createOnFuji                    bool
+	createDevnet                    bool
+	createOnMainnet                 bool
 	useAWS                          bool
 	useGCP                          bool
 	cmdLineRegion                   string
@@ -94,6 +98,8 @@ will apply to all nodes in the cluster`,
 	cmd.Flags().StringVar(&cmdLineGCPCredentialsPath, "gcp-credentials", "", "use given GCP credentials")
 	cmd.Flags().StringVar(&cmdLineGCPProjectName, "gcp-project", "", "use given GCP project")
 	cmd.Flags().StringVar(&cmdLineAlternativeKeyPairName, "alternative-key-pair-name", "", "key pair name to use if default one generates conflicts")
+	cmd.Flags().BoolVar(&createOnFuji, "fuji", false, "create node/s in Fuji Network")
+	cmd.Flags().BoolVar(&createDevnet, "devnet", false, "create node/s into a new Devnet")
 
 	return cmd
 }
@@ -106,6 +112,19 @@ func createNodes(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("could not use both AWS and GCP cloud options")
 	}
 	clusterName := args[0]
+
+	network, err := subnetcmd.GetNetworkFromCmdLineFlags(
+		false,
+		createDevnet,
+		createOnFuji,
+		createOnMainnet,
+		"",
+		[]models.NetworkKind{models.Fuji, models.Devnet},
+	)
+	if err != nil {
+		return err
+	}
+
 	cloudService, err := setCloudService()
 	if err != nil {
 		return err
@@ -177,7 +196,7 @@ func createNodes(_ *cobra.Command, args []string) error {
 		gcpProjectName = projectName
 		gcpCredentialFilepath = credentialFilepath
 	}
-	network := models.FujiNetwork
+
 	if err = createClusterNodeConfig(network, cloudConfig, clusterName, cloudService); err != nil {
 		return err
 	}

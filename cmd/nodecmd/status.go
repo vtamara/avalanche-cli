@@ -103,34 +103,50 @@ func statusNode(_ *cobra.Command, args []string) error {
 	subnetSyncedNodes := []string{}
 	subnetValidatingNodes := []string{}
 	if subnetName != "" {
-		clustersConfig, err := app.LoadClustersConfig()
-		if err != nil {
-			return err
+		hostsToCheckSyncStatus := []string{}
+		for _, ansibleHostID := range ansibleHostIDs {
+			if slices.Contains(notBootstrappedNodes, ansibleHostID) {
+				notSyncedNodes = append(notSyncedNodes, ansibleHostID)
+			} else {
+				hostsToCheckSyncStatus = append(hostsToCheckSyncStatus, ansibleHostID)
+			}
 		}
-		network := clustersConfig.Clusters[clusterName].Network
-		sc, err := app.LoadSidecar(subnetName)
-		if err != nil {
-			return err
-		}
-		blockchainID := sc.Networks[network.Kind.String()].BlockchainID
-		if blockchainID == ids.Empty {
-			return ErrNoBlockchainID
-		}
-		if err := ansible.RunAnsiblePlaybookSubnetSyncStatus(app.GetAnsibleDir(), app.GetSubnetSyncJSONFile(), blockchainID.String(), app.GetAnsibleInventoryDirPath(clusterName), "all"); err != nil {
-			return err
-		}
-		for _, host := range ansibleHostIDs {
-			subnetSyncStatus, err := parseSubnetSyncOutput(app.GetSubnetSyncJSONFile() + "." + host)
+		if len(hostsToCheckSyncStatus) != 0 {
+			clustersConfig, err := app.LoadClustersConfig()
 			if err != nil {
 				return err
 			}
-			switch subnetSyncStatus {
-			case status.Syncing.String():
-				subnetSyncedNodes = append(subnetSyncedNodes, host)
-			case status.Validating.String():
-				subnetValidatingNodes = append(subnetValidatingNodes, host)
-			default:
-				notSyncedNodes = append(notSyncedNodes, host)
+			network := clustersConfig.Clusters[clusterName].Network
+			sc, err := app.LoadSidecar(subnetName)
+			if err != nil {
+				return err
+			}
+			blockchainID := sc.Networks[network.Kind.String()].BlockchainID
+			if blockchainID == ids.Empty {
+				return ErrNoBlockchainID
+			}
+			if err := ansible.RunAnsiblePlaybookSubnetSyncStatus(
+				app.GetAnsibleDir(),
+				app.GetSubnetSyncJSONFile(),
+				blockchainID.String(),
+				app.GetAnsibleInventoryDirPath(clusterName),
+				strings.Join(hostsToCheckSyncStatus, ","),
+			); err != nil {
+				return err
+			}
+			for _, ansibleHostID := range hostsToCheckSyncStatus {
+				subnetSyncStatus, err := parseSubnetSyncOutput(app.GetSubnetSyncJSONFile() + "." + ansibleHostID)
+				if err != nil {
+					return err
+				}
+				switch subnetSyncStatus {
+				case status.Syncing.String():
+					subnetSyncedNodes = append(subnetSyncedNodes, ansibleHostID)
+				case status.Validating.String():
+					subnetValidatingNodes = append(subnetValidatingNodes, ansibleHostID)
+				default:
+					notSyncedNodes = append(notSyncedNodes, ansibleHostID)
+				}
 			}
 		}
 	}
@@ -205,7 +221,7 @@ func printOutput(
 		}
 		healthyStatus := logging.Green.Wrap("OK")
 		if slices.Contains(notHealthyHosts, ansibleHostID) {
-			healthyStatus = logging.Red.Wrap("ERR")
+			healthyStatus = logging.Red.Wrap("UNHEALTHY")
 		}
 		row := []string{
 			hostIDs[i],
