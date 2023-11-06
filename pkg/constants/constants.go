@@ -122,7 +122,6 @@ const (
 	TestPlaybook                                 = "playbook/test.yml"
 	SetupDevnetPlaybook                          = "playbook/setupDevnet.yml"
 	ExportSubnetPlaybook                         = "playbook/exportSubnet.yml"
-	ImportSubnetPlaybook                         = "playbook/importSubnet.yml"
 	IsBootstrappedPlaybook                       = "playbook/isBootstrapped.yml"
 	IsHealthyPlaybook                            = "playbook/isHealthy.yml"
 	IsSubnetSyncedPlaybook                       = "playbook/isSubnetSynced.yml"

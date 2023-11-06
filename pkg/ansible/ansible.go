@@ -222,21 +222,6 @@ func RunAnsiblePlaybookExportSubnet(ansibleDir, inventoryPath, subnetPath, ansib
 	return cmdErr
 }
 
-func RunAnsiblePlaybookImportSubnet(ansibleDir, inventoryPath, subnetPath, ansibleHostID string) error {
-	playbookInputs := "target=" + ansibleHostID + " subnetPath=" + subnetPath
-	cmd := exec.Command(constants.AnsiblePlaybook, constants.ImportSubnetPlaybook, constants.AnsibleInventoryFlag, inventoryPath, constants.AnsibleExtraVarsFlag, playbookInputs, constants.AnsibleExtraArgsIdentitiesOnlyFlag) //nolint:gosec
-	cmd.Dir = ansibleDir
-	stdoutBuffer, stderrBuffer := utils.SetupRealtimeCLIOutput(cmd, true, true)
-	cmdErr := cmd.Run()
-	if err := displayErrMsg(stdoutBuffer); err != nil {
-		return err
-	}
-	if err := displayErrMsg(stderrBuffer); err != nil {
-		return err
-	}
-	return cmdErr
-}
-
 // RunAnsiblePlaybookTrackSubnet runs avalanche subnet join <subnetName> in cloud server
 // targets a specific host ansibleHostID in ansible inventory file
 func RunAnsiblePlaybookTrackSubnet(
