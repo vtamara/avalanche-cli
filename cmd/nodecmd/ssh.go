@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newSshCmd() *cobra.Command {
+func newSSHCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ssh [clusterName] [cmd]",
 		Short: "(ALPHA Warning) Execute ssh command on node/s",
@@ -33,17 +33,17 @@ If no command is given, just prints the ssh cmdLine to be used to connect to eac
 func sshNode(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		var err error
-		clusterConfig := models.ClustersConfig{}
+		clustersConfig := models.ClustersConfig{}
 		if app.ClustersConfigExists() {
-			clusterConfig, err = app.LoadClustersConfig()
+			clustersConfig, err = app.LoadClustersConfig()
 			if err != nil {
 				return err
 			}
 		}
-		if len(clusterConfig.Clusters) == 0 {
+		if len(clustersConfig.Clusters) == 0 {
 			ux.Logger.PrintToUser("There are no clusters defined.")
 		}
-		for clusterName, clusterConfig := range clusterConfig.Clusters {
+		for clusterName, clusterConfig := range clustersConfig.Clusters {
 			ux.Logger.PrintToUser("Cluster %q (%s)", clusterName, clusterConfig.Network.Kind.String())
 			if err := sshCluster([]string{clusterName}, "  "); err != nil {
 				return err

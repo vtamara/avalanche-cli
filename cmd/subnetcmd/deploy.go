@@ -610,7 +610,7 @@ func useAllKeys(network models.Network) ([]string, error) {
 	}
 
 	for _, kp := range keyPaths {
-		k, err := key.LoadSoft(network.Id, kp)
+		k, err := key.LoadSoft(network.ID, kp)
 		if err != nil {
 			return nil, err
 		}
@@ -626,7 +626,7 @@ func loadCreationKeys(network models.Network, kc keychain.Keychain) ([]string, e
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("no creation addresses found")
 	}
-	hrp := key.GetHRP(network.Id)
+	hrp := key.GetHRP(network.ID)
 	addrsStr := []string{}
 	for _, addr := range addrs {
 		addrStr, err := address.Format("P", hrp, addr[:])
@@ -832,7 +832,7 @@ func GetKeychain(
 		}
 		addrStrs := []string{}
 		for _, addr := range addresses {
-			addrStr, err := address.Format("P", key.GetHRP(network.Id), addr[:])
+			addrStr, err := address.Format("P", key.GetHRP(network.ID), addr[:])
 			if err != nil {
 				return kc, err
 			}
@@ -845,13 +845,13 @@ func GetKeychain(
 		return keychain.NewLedgerKeychainFromIndices(ledgerDevice, ledgerIndices)
 	}
 	if useEwoq {
-		sf, err := key.LoadEwoq(network.Id)
+		sf, err := key.LoadEwoq(network.ID)
 		if err != nil {
 			return kc, err
 		}
 		return sf.KeyChain(), nil
 	}
-	sf, err := key.LoadSoft(network.Id, app.GetKeyPath(keyName))
+	sf, err := key.LoadSoft(network.ID, app.GetKeyPath(keyName))
 	if err != nil {
 		return kc, err
 	}

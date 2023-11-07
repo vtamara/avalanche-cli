@@ -29,17 +29,17 @@ The node list command lists all clusters together with their nodes.`,
 
 func list(_ *cobra.Command, _ []string) error {
 	var err error
-	clusterConfig := models.ClustersConfig{}
+	clustersConfig := models.ClustersConfig{}
 	if app.ClustersConfigExists() {
-		clusterConfig, err = app.LoadClustersConfig()
+		clustersConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return err
 		}
 	}
-	if len(clusterConfig.Clusters) == 0 {
+	if len(clustersConfig.Clusters) == 0 {
 		ux.Logger.PrintToUser("There are no clusters defined.")
 	}
-	for clusterName, clusterConf := range clusterConfig.Clusters {
+	for clusterName, clusterConf := range clustersConfig.Clusters {
 		ux.Logger.PrintToUser("Cluster %q (%s)", clusterName, clusterConf.Network.Kind.String())
 		if err := checkCluster(clusterName); err != nil {
 			return err

@@ -683,28 +683,28 @@ func (app *Avalanche) LoadClusterNodeConfig(nodeName string) (models.NodeConfig,
 }
 
 func (app *Avalanche) LoadClustersConfig() (models.ClustersConfig, error) {
-	clusterConfigPath := app.GetClustersConfigPath()
-	jsonBytes, err := os.ReadFile(clusterConfigPath)
+	clustersConfigPath := app.GetClustersConfigPath()
+	jsonBytes, err := os.ReadFile(clustersConfigPath)
 	if err != nil {
 		return models.ClustersConfig{}, err
 	}
-	var clusterConfig models.ClustersConfig
-	err = json.Unmarshal(jsonBytes, &clusterConfig)
-	return clusterConfig, err
+	var clustersConfig models.ClustersConfig
+	err = json.Unmarshal(jsonBytes, &clustersConfig)
+	return clustersConfig, err
 }
 
-func (app *Avalanche) WriteClustersConfigFile(clusterConfig *models.ClustersConfig) error {
-	clusterConfigPath := app.GetClustersConfigPath()
-	if err := os.MkdirAll(filepath.Dir(clusterConfigPath), constants.DefaultPerms755); err != nil {
+func (app *Avalanche) WriteClustersConfigFile(clustersConfig *models.ClustersConfig) error {
+	clustersConfigPath := app.GetClustersConfigPath()
+	if err := os.MkdirAll(filepath.Dir(clustersConfigPath), constants.DefaultPerms755); err != nil {
 		return err
 	}
 
-	clusterConfigBytes, err := json.MarshalIndent(clusterConfig, "", "    ")
+	clustersConfigBytes, err := json.MarshalIndent(clustersConfig, "", "    ")
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(clusterConfigPath, clusterConfigBytes, constants.WriteReadReadPerms)
+	return os.WriteFile(clustersConfigPath, clustersConfigBytes, constants.WriteReadReadPerms)
 }
 
 func (*Avalanche) GetSSHCertFilePath(certName string) (string, error) {

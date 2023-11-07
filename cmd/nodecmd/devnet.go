@@ -136,25 +136,25 @@ func setupDevnet(clusterName string) error {
 	// set devnet network
 	network := models.DevnetNetwork
 	network.Endpoint = "http://" + ansibleHosts[ansibleHostIDs[0]].IP + ":9650"
-	ux.Logger.PrintToUser("Devnet Network Id: %d", network.Id)
+	ux.Logger.PrintToUser("Devnet Network Id: %d", network.ID)
 	ux.Logger.PrintToUser("Devnet Endpoint: %s", network.Endpoint)
 
 	// get random staking key for devnet genesis
-	k, err := key.NewSoft(network.Id)
+	k, err := key.NewSoft(network.ID)
 	if err != nil {
 		return err
 	}
 	stakingAddrStr := k.X()[0]
 
 	// get ewoq key as funded key for devnet genesis
-	k, err = key.LoadEwoq(network.Id)
+	k, err = key.LoadEwoq(network.ID)
 	if err != nil {
 		return err
 	}
 	walletAddrStr := k.X()[0]
 
 	// create genesis file at each node dir
-	genesisBytes, err := generateCustomGenesis(network.Id, walletAddrStr, stakingAddrStr, nodeIDs)
+	genesisBytes, err := generateCustomGenesis(network.ID, walletAddrStr, stakingAddrStr, nodeIDs)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func setupDevnet(clusterName string) error {
 		confMap := map[string]interface{}{}
 		confMap[config.HTTPHostKey] = ""
 		confMap[config.PublicIPKey] = ansibleHosts[ansibleHostID].IP
-		confMap[config.NetworkNameKey] = fmt.Sprintf("network-%d", network.Id)
+		confMap[config.NetworkNameKey] = fmt.Sprintf("network-%d", network.ID)
 		confMap[config.BootstrapIDsKey] = strings.Join(bootstrapIDs, ",")
 		confMap[config.BootstrapIPsKey] = strings.Join(bootstrapIPs, ",")
 		confMap[config.GenesisFileKey] = "/home/ubuntu/.avalanchego/configs/genesis.json"

@@ -22,6 +22,15 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+type KeySource int
+
+const (
+	UndefinedKeySource KeySource = iota
+	StoredKey
+	Ledger
+	Ewoq
+)
+
 const (
 	Yes = "Yes"
 	No  = "No"
@@ -95,7 +104,7 @@ type Prompter interface {
 	CaptureUint64Compare(promptStr string, comparators []Comparator) (uint64, error)
 	CapturePChainAddress(promptStr string, network models.Network) (string, error)
 	CaptureFutureDate(promptStr string, minDate time.Time) (time.Time, error)
-	ChooseEwoqKeyOrLedger(askForEwoq bool, goal string) (string, error)
+	ChooseEwoqKeyOrLedger(askForEwoq bool, goal string) (KeySource, error)
 }
 
 type realPrompter struct{}
@@ -683,7 +692,7 @@ func (*realPrompter) CaptureFutureDate(promptStr string, minDate time.Time) (tim
 }
 
 // returns "key" or "ledger" or "ewoq" or ""
-func (prompter *realPrompter) ChooseEwoqKeyOrLedger(askForEwoq bool, goal string) (string, error) {
+func (prompter *realPrompter) ChooseEwoqKeyOrLedger(askForEwoq bool, goal string) (KeySource, error) {
 	const (
 		keyOption    = "Use stored key"
 		ledgerOption = "Use ledger"
@@ -698,17 +707,17 @@ func (prompter *realPrompter) ChooseEwoqKeyOrLedger(askForEwoq bool, goal string
 		options,
 	)
 	if err != nil {
-		return "", err
+		return UndefinedKeySource, err
 	}
 	switch option {
 	case keyOption:
-		return "key", nil
+		return StoredKey, nil
 	case ledgerOption:
-		return "ledger", nil
+		return Ledger, nil
 	case ewoqOption:
-		return "ewoq", nil
+		return Ewoq, nil
 	}
-	return "", nil
+	return UndefinedKeySource, nil
 }
 
 func contains[T comparable](list []T, element T) bool {
@@ -796,8 +805,8 @@ func GetEwoqKeyOrLedger(prompt Prompter, network models.Network, goal string, ke
 	if err != nil {
 		return false, false, "", err
 	}
-	if option != "key" {
-		return option == "ledger", option != "ledger", "", nil
+	if option != StoredKey {
+		return option == Ledger, option != Ledger, "", nil
 	}
 	keyName, err := captureKeyName(prompt, goal, keyDir)
 	if err != nil {

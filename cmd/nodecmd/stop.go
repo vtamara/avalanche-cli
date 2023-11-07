@@ -44,18 +44,18 @@ Note that a stopped node may still incur cloud server storage fees.`,
 }
 
 func removeNodeFromClustersConfig(clusterName string) error {
-	clusterConfig := models.ClustersConfig{}
+	clustersConfig := models.ClustersConfig{}
 	var err error
 	if app.ClustersConfigExists() {
-		clusterConfig, err = app.LoadClustersConfig()
+		clustersConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return err
 		}
 	}
-	if clusterConfig.Clusters != nil {
-		delete(clusterConfig.Clusters, clusterName)
+	if clustersConfig.Clusters != nil {
+		delete(clustersConfig.Clusters, clusterName)
 	}
-	return app.WriteClustersConfigFile(&clusterConfig)
+	return app.WriteClustersConfigFile(&clustersConfig)
 }
 
 func removeDeletedNodeDirectory(clusterName string) error {
@@ -177,18 +177,18 @@ func checkCluster(clusterName string) error {
 }
 
 func getClusterNodes(clusterName string) ([]string, error) {
-	clusterConfig := models.ClustersConfig{}
+	clustersConfig := models.ClustersConfig{}
 	if app.ClustersConfigExists() {
 		var err error
-		clusterConfig, err = app.LoadClustersConfig()
+		clustersConfig, err = app.LoadClustersConfig()
 		if err != nil {
 			return nil, err
 		}
 	}
-	if _, ok := clusterConfig.Clusters[clusterName]; !ok {
+	if _, ok := clustersConfig.Clusters[clusterName]; !ok {
 		return nil, fmt.Errorf("cluster %q does not exist", clusterName)
 	}
-	clusterNodes := clusterConfig.Clusters[clusterName].Nodes
+	clusterNodes := clustersConfig.Clusters[clusterName].Nodes
 	if len(clusterNodes) == 0 {
 		return nil, fmt.Errorf("no nodes found in cluster %s", clusterName)
 	}

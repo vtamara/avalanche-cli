@@ -40,11 +40,11 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 	if _, err := subnetcmd.ValidateSubnetNameAndGetChains([]string{subnetName}); err != nil {
 		return err
 	}
-	clusterConfig, err := app.LoadClustersConfig()
+	clustersConfig, err := app.LoadClustersConfig()
 	if err != nil {
 		return err
 	}
-	if clusterConfig.Clusters[clusterName].Network.Kind != models.Devnet {
+	if clustersConfig.Clusters[clusterName].Network.Kind != models.Devnet {
 		return fmt.Errorf("node deploy command must be applied to devnet clusters")
 	}
 
@@ -79,7 +79,7 @@ func deploySubnet(_ *cobra.Command, args []string) error {
 	deployDevnet := true
 	deployTestnet := false
 	ddeployMainnet := false
-	endpoint := clusterConfig.Clusters[clusterName].Network.Endpoint
+	endpoint := clustersConfig.Clusters[clusterName].Network.Endpoint
 	keyNameParam := ""
 	useLedgerParam := false
 	useEwoqParam := true

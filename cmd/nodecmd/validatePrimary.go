@@ -362,11 +362,11 @@ func validatePrimaryNetwork(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	clusterConfig, err := app.LoadClustersConfig()
+	clustersConfig, err := app.LoadClustersConfig()
 	if err != nil {
 		return err
 	}
-	network := clusterConfig.Clusters[clusterName].Network
+	network := clustersConfig.Clusters[clusterName].Network
 
 	kc, err := subnetcmd.GetKeychainFromCmdLineFlags(
 		"pay transaction fees",

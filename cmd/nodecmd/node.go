@@ -45,7 +45,7 @@ rest of the commands to maintain your node and make your node a Subnet Validator
 	// node update
 	cmd.AddCommand(newUpdateCmd())
 	// node ssh
-	cmd.AddCommand(newSshCmd())
+	cmd.AddCommand(newSSHCmd())
 	// node deploy
 	cmd.AddCommand(newDeployCmd())
 	return cmd
