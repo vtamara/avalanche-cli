@@ -19,20 +19,22 @@ import (
 	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/ava-labs/avalanchego/config"
 	coreth_params "github.com/ava-labs/coreth/params"
-	"github.com/spf13/cobra"
 )
 
 // difference between unlock schedule locktime and startime in original genesis
-const genesisLocktimeStartimeDelta = 2836800
+const (
+	genesisLocktimeStartimeDelta = 2836800
+	hexa0Str                     = "0x0"
+)
 
 func generateCustomCchainGenesis() ([]byte, error) {
 	cChainGenesisMap := map[string]interface{}{}
 	cChainGenesisMap["config"] = coreth_params.AvalancheLocalChainConfig
-	cChainGenesisMap["nonce"] = "0x0"
-	cChainGenesisMap["timestamp"] = "0x0"
+	cChainGenesisMap["nonce"] = hexa0Str
+	cChainGenesisMap["timestamp"] = hexa0Str
 	cChainGenesisMap["extraData"] = "0x00"
 	cChainGenesisMap["gasLimit"] = "0x5f5e100"
-	cChainGenesisMap["difficulty"] = "0x0"
+	cChainGenesisMap["difficulty"] = hexa0Str
 	cChainGenesisMap["mixHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
 	cChainGenesisMap["coinbase"] = "0x0000000000000000000000000000000000000000"
 	cChainGenesisMap["alloc"] = map[string]interface{}{
@@ -40,8 +42,8 @@ func generateCustomCchainGenesis() ([]byte, error) {
 			"balance": "0x295BE96E64066972000000",
 		},
 	}
-	cChainGenesisMap["number"] = "0x0"
-	cChainGenesisMap["gasUsed"] = "0x0"
+	cChainGenesisMap["number"] = hexa0Str
+	cChainGenesisMap["gasUsed"] = hexa0Str
 	cChainGenesisMap["parentHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
 	return json.Marshal(cChainGenesisMap)
 }
@@ -100,10 +102,6 @@ func generateCustomGenesis(networkID uint32, walletAddr string, stakingAddr stri
 	genesisMap["message"] = "{{ fun_quote }}"
 
 	return json.MarshalIndent(genesisMap, "", " ")
-}
-
-func devnetCmd(_ *cobra.Command, args []string) error {
-	return setupDevnet(args[0])
 }
 
 func setupDevnet(clusterName string) error {

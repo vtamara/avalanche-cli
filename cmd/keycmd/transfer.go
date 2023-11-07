@@ -45,7 +45,6 @@ var (
 	receiverAddrStr     string
 	amountFlt           float64
 	receiveRecoveryStep uint64
-	useEwoq             bool
 )
 
 func newTransferCmd() *cobra.Command {
@@ -200,7 +199,7 @@ func transferF(*cobra.Command, []string) error {
 		} else {
 			goalStr = " for the receiver address"
 		}
-		useLedger, useEwoq, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, goalStr, app.GetKeyDir())
+		useLedger, _, keyName, err = prompts.GetEwoqKeyOrLedger(app.Prompt, network, goalStr, app.GetKeyDir())
 		if err != nil {
 			return err
 		}

@@ -50,10 +50,9 @@ func sshNode(_ *cobra.Command, args []string) error {
 			}
 			ux.Logger.PrintToUser("")
 		}
-	} else {
-		return sshCluster(args, "")
+		return nil
 	}
-	return nil
+	return sshCluster(args, "")
 }
 
 func sshCluster(args []string, indent string) error {
@@ -81,7 +80,7 @@ func sshCluster(args []string, indent string) error {
 		ux.Logger.PrintToUser("%s[%s] %s", indent, cloudID, cmdLine)
 		if len(args) > 1 {
 			splitCmdLine := strings.Split(cmdLine, " ")
-			cmd := exec.Command(splitCmdLine[0], splitCmdLine[1:]...)
+			cmd := exec.Command(splitCmdLine[0], splitCmdLine[1:]...) //nolint: gosec
 			_, _ = utils.SetupRealtimeCLIOutput(cmd, true, true)
 			err = cmd.Run()
 			if err != nil {

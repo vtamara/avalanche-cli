@@ -310,7 +310,6 @@ func addNodeToClustersConfig(network models.Network, nodeID, clusterName string)
 			Network: network,
 			Nodes:   []string{},
 		}
-
 	}
 	nodes := clustersConfig.Clusters[clusterName].Nodes
 	nodes = append(nodes, nodeID)

@@ -68,14 +68,6 @@ flag.`,
 	return cmd
 }
 
-func CallImportSubnet(subnetName, importPath string, force bool) error {
-	args := []string{importPath}
-	if force {
-		overwriteImport = true
-	}
-	return importSubnet(nil, args)
-}
-
 func importSubnet(_ *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		importPath := args[0]
@@ -142,7 +134,7 @@ func importFromFile(importPath string) error {
 			return fmt.Errorf("build script must be defined for custom vm import")
 		}
 
-		if vm.BuildCustomVM(app, &importable.Sidecar); err != nil {
+		if err := vm.BuildCustomVM(app, &importable.Sidecar); err != nil {
 			return err
 		}
 

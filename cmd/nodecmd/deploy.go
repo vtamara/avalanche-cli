@@ -18,7 +18,7 @@ func newDeployCmd() *cobra.Command {
 		Long: `(ALPHA Warning) This command is currently in experimental mode.
 
 The node deploy command deploys a subnet into a devnet cluster, creating subnet and blockchain txs for it.
-It saves the deploy info both locally and remotelly.
+It saves the deploy info both locally and remotely.
 `,
 		SilenceUsage: true,
 		Args:         cobra.ExactArgs(2),
