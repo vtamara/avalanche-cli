@@ -89,8 +89,7 @@ func statusNode(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	ux.Logger.PrintToUser("Getting avalanchego version of node(s)")
-
+	ux.Logger.PrintToUser("Getting avalanchego version of node(s)...")
 	wg := sync.WaitGroup{}
 	wgResults := models.NodeResults{}
 	for _, host := range hosts {

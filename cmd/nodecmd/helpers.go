@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -45,6 +46,43 @@ func checkHostsAreHealthy(hosts []*models.Host) ([]string, error) {
 	}
 	return utils.Filter(wgResults.GetNodeList(), func(nodeID string) bool {
 		return !wgResults.GetResultMap()[nodeID].(bool)
+	}), nil
+}
+
+func checkHostsDiskUsage(host []*models.Host) (map[string]string, error) {
+	ux.Logger.PrintToUser("Checking node(s) disk usage ...")
+	wg := sync.WaitGroup{}
+	wgResults := models.NodeResults{}
+	for _, host := range hosts {
+		wg.Add(1)
+		go func(nodeResults *models.NodeResults, host *models.Host) {
+			defer wg.Done()
+			duBytes, err := host.Command("df /dev/root", nil, constants.SSHFileOpsTimeout)
+			if err != nil {
+				nodeResults.AddResult(host.NodeID, nil, err)
+				return
+			}
+			duLines := strings.Split(string(duBytes), "\n")
+			if len(duLines) >= 2 {
+				re := regexp.MustCompile(`(\d+)%`)
+				matches := re.FindStringSubmatch(duLines[1])
+				if len(matches) >= 2 {
+					nodeResults.AddResult(host.NodeID, matches[1], err)
+				} else {
+					nodeResults.AddResult(host.NodeID, nil, errors.New("failed to get disk usage"))
+				}
+			} else {
+				nodeResults.AddResult(host.NodeID, nil, errors.New("failed to get disk usage"))
+			}
+
+		}(&wgResults, host)
+	}
+	wg.Wait()
+	if wgResults.HasErrors() {
+		return nil, fmt.Errorf("failed to get disk usage for node(s) %s", wgResults.GetErrorHostMap())
+	}
+	return utils.Filter(wgResults.GetNodeList(), func(nodeID string) string {
+		return !wgResults.GetResultMap()[nodeID].(string)
 	}), nil
 }
 
