@@ -57,6 +57,10 @@ var (
 	cmdLineGCPCredentialsPath       string
 	cmdLineGCPProjectName           string
 	cmdLineAlternativeKeyPairName   string
+	withRPC                         bool
+	cmdLineRegionRPC                string
+	numNodesRPC                     int
+	nodeTypeRPC                     string
 )
 
 func newCreateCmd() *cobra.Command {
@@ -97,6 +101,11 @@ will apply to all nodes in the cluster`,
 	cmd.Flags().StringVar(&awsProfile, "aws-profile", constants.AWSDefaultCredential, "aws profile to use")
 	cmd.Flags().BoolVar(&createOnFuji, "fuji", false, "create node/s in Fuji Network")
 	cmd.Flags().BoolVar(&createDevnet, "devnet", false, "create node/s into a new Devnet")
+	// rpc
+	cmd.Flags().BoolVar(&withRPC, "rpc", false, "add RPC nodes. LoadBalancer will be used to route requests to these RPC nodes")
+	cmd.Flags().StringVar(&cmdLineRegionRPC, "rpc-region", "", "create  RPC node(s) in given region")
+	cmd.Flags().IntVar(&numNodesRPC, "rpc-num-nodes", 0, "number of RPC nodes to create")
+	cmd.Flags().StringVar(&nodeTypeRPC, "rpc-node-type", "", "cloud instance type. Use 'default' to use recommended default instance type")
 	return cmd
 }
 
@@ -141,14 +150,23 @@ func createNodes(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
 	cloudService, err := setCloudService()
 	if err != nil {
 		return err
 	}
-	nodeType, err = setCloudInstanceType(cloudService)
+	nodeType, err = setCloudInstanceType(cloudService, false)
 	if err != nil {
 		return err
+	}
+	if withRPC {
+		nodeTypeRPC, err = setCloudInstanceType(cloudService, withRPC)
+		if err != nil {
+			return err
+		}
+		cmdLineRegionRPC, numNodesRPC, err = getRPCRegionsNodeNum(cloudService)
+		if err != nil {
+			return err
+		}
 	}
 
 	if cloudService != constants.GCPCloudService && cmdLineGCPCredentialsPath != "" {
@@ -604,25 +622,42 @@ func setCloudService() (string, error) {
 	return chosenCloudService, nil
 }
 
-func setCloudInstanceType(cloudService string) (string, error) {
-	switch { // backwards compatibility
-	case nodeType == "default" && cloudService == constants.AWSCloudService:
-		nodeType = constants.AWSDefaultInstanceType
-		return nodeType, nil
-	case nodeType == "default" && cloudService == constants.GCPCloudService:
-		nodeType = constants.GCPDefaultInstanceType
-		return nodeType, nil
+// setCloudInstanceType sets the cloud instance type based on the given cloud service.
+func setCloudInstanceType(cloudService string, isRPC bool) (string, error) {
+	if nodeType == "default" {
+		switch { // backwards compatibility
+		case isRPC && cloudService == constants.AWSCloudService:
+			nodeType = constants.AWSRPCDefaultInstanceType
+			return nodeType, nil
+		case isRPC && cloudService == constants.GCPCloudService:
+			nodeType = constants.GCPRPCDefaultInstanceType
+			return nodeType, nil
+		case !isRPC && cloudService == constants.AWSCloudService:
+			nodeType = constants.AWSDefaultInstanceType
+			return nodeType, nil
+		case !isRPC && cloudService == constants.GCPCloudService:
+			nodeType = constants.GCPDefaultInstanceType
+			return nodeType, nil
+		}
 	}
 	defaultNodeType := ""
 	nodeTypeOption2 := ""
 	nodeTypeOption3 := ""
 	customNodeType := "Choose custom instance type"
 	switch {
-	case cloudService == constants.AWSCloudService:
+	case isRPC && cloudService == constants.AWSCloudService: // aws RPC
+		defaultNodeType = constants.AWSRPCDefaultInstanceType
+		nodeTypeOption2 = "t3a.2xlarge" // burst
+		nodeTypeOption3 = "c5n.2xlarge"
+	case isRPC && cloudService == constants.GCPCloudService: // gcp RCP
+		defaultNodeType = constants.GCPRPCDefaultInstanceType
+		nodeTypeOption2 = "c3-highcpu-8"
+		nodeTypeOption3 = "n2-standard-8"
+	case !isRPC && cloudService == constants.AWSCloudService: // aws Validator
 		defaultNodeType = constants.AWSDefaultInstanceType
 		nodeTypeOption2 = "t3a.2xlarge" // burst
 		nodeTypeOption3 = "c5n.2xlarge"
-	case cloudService == constants.GCPCloudService:
+	case !isRPC && cloudService == constants.GCPCloudService: // gcp Validator
 		defaultNodeType = constants.GCPDefaultInstanceType
 		nodeTypeOption2 = "c3-highcpu-8"
 		nodeTypeOption3 = "n2-standard-8"
@@ -718,6 +753,7 @@ func requestCloudAuth(cloudName string) error {
 	return nil
 }
 
+// getRegionsNodeNum returns a map of regions and the number of nodes to be set up in each region for the given cloud service.
 func getRegionsNodeNum(cloudName string) (
 	map[string]int,
 	error,
@@ -781,4 +817,62 @@ func getRegionsNodeNum(cloudName string) (
 			return nodes, nil
 		}
 	}
+}
+
+// getRPCRegionsNodeNum returns the user-selected region and the number of RPC nodes to be set up in that region.
+func getRPCRegionsNodeNum(cloudName string) (
+	string,
+	int,
+	error,
+) {
+	type CloudPrompt struct {
+		defaultLocations []string
+		locationName     string
+		locationsListURL string
+	}
+
+	supportedClouds := map[string]CloudPrompt{
+		constants.AWSCloudService: {
+			defaultLocations: []string{"us-east-1", "us-east-2", "us-west-1", "us-west-2"},
+			locationName:     "AWS Region",
+			locationsListURL: "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html",
+		},
+		constants.GCPCloudService: {
+			defaultLocations: []string{"us-east1-b", "us-central1-c", "us-west1-b"},
+			locationName:     "Google Zone",
+			locationsListURL: "https://cloud.google.com/compute/docs/regions-zones/",
+		},
+	}
+
+	if _, ok := supportedClouds[cloudName]; !ok {
+		return "", 0, fmt.Errorf("cloud %s is not supported", cloudName)
+	}
+	if cmdLineRegionRPC != "" {
+		awsCustomRegion := fmt.Sprintf("Choose custom %s (list of %ss available at %s)", supportedClouds[cloudName].locationName, supportedClouds[cloudName].locationName, supportedClouds[cloudName].locationsListURL)
+		userRegion, err := app.Prompt.CaptureList(
+			fmt.Sprintf("Which %s do you want to set up your RPC node(s) in?", supportedClouds[cloudName].locationName),
+			append(supportedClouds[cloudName].defaultLocations, awsCustomRegion),
+		)
+		if err != nil {
+			return "", 0, err
+		}
+		if userRegion == awsCustomRegion {
+			userRegion, err = app.Prompt.CaptureString(fmt.Sprintf("Which %s do you want to set up your RPC node(s) in?", supportedClouds[cloudName].locationName))
+			if err != nil {
+				return "", 0, err
+			}
+		}
+		cmdLineRegionRPC = userRegion
+	}
+	if numNodesRPC == 0 {
+		numNodes, err := app.Prompt.CaptureUint32(fmt.Sprintf("How many RPCnodes do you want to set up in %s %s?", cmdLineRegionRPC, supportedClouds[cloudName].locationName))
+		if err != nil {
+			return "", 0, err
+		}
+		if numNodes > uint32(math.MaxInt32) {
+			return "", 0, fmt.Errorf("number of nodes exceeds the range of a signed 32-bit integer")
+		}
+		numNodesRPC = int(numNodes)
+	}
+	return cmdLineRegionRPC, numNodesRPC, nil
 }
