@@ -30,7 +30,10 @@ const (
 	gcpRegionAPI  = "https://www.googleapis.com/compute/v1/projects/%s/regions/%s"
 )
 
-var ErrNodeNotFoundToBeRunning = errors.New("node not found to be running")
+var (
+	ErrNodeNotFoundToBeRunning = errors.New("node not found to be running")
+	SupportedVolumeTypes       = []string{"pd-standard", "pd-balanced", "pd-ssd", "pd-extreme"}
+)
 
 type GcpCloud struct {
 	gcpClient *compute.Service

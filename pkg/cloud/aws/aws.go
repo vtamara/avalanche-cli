@@ -27,6 +27,7 @@ var (
 	ErrNoInstanceState         = errors.New("unable to get instance state")
 	ErrNoAddressFound          = errors.New("unable to get public IP address info on AWS")
 	ErrNodeNotFoundToBeRunning = errors.New("node not found to be running")
+	SupportedVolumeTypes       = []string{"gp3", "gp2", "io1", "io2", "st1", "sc1", "standard"}
 )
 
 type AwsCloud struct {

@@ -69,6 +69,12 @@ func (h *Host) GetCloudID() string {
 	return cloudID
 }
 
+// GetCloudName returns the cloud name of the host.
+func (h *Host) GetCloudName() string {
+	cloudName, _, _ := HostAnsibleIDToCloudID(h.NodeID)
+	return cloudName
+}
+
 // Connect starts a new SSH connection with the provided private key.
 func (h *Host) Connect() error {
 	if h.Connection != nil {
@@ -280,7 +286,7 @@ func HostCloudIDToAnsibleID(cloudService string, hostCloudID string) (string, er
 	return "", fmt.Errorf("unknown cloud service %s", cloudService)
 }
 
-// HostAnsibleIDToCloudID converts a host Ansible ID to a cloud ID.
+// HostAnsibleIDToCloudID returns cloud Name and  cloud ID based on the ansible ID
 func HostAnsibleIDToCloudID(hostAnsibleID string) (string, string, error) {
 	var cloudService, cloudIDPrefix string
 	switch {
