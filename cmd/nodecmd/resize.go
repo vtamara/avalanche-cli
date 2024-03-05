@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/ava-labs/avalanche-cli/pkg/ansible"
 	awsAPI "github.com/ava-labs/avalanche-cli/pkg/cloud/aws"
 	gcpAPI "github.com/ava-labs/avalanche-cli/pkg/cloud/gcp"
 	"github.com/ava-labs/avalanche-cli/pkg/constants"
+	"github.com/ava-labs/avalanche-cli/pkg/ux"
 	"github.com/spf13/cobra"
 )
 
@@ -45,16 +45,19 @@ func resize(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("at least one of --instance-type, --disk-size-gb, or --disk-type must be provided")
 	}
 	//get cloudIDs for the cluster
-	hosts, err := ansible.GetInventoryFromAnsibleInventoryFile(app.GetAnsibleInventoryDirPath(clusterName))
+	clusterNodes, err := getClusterNodes(clusterName)
 	if err != nil {
 		return err
 	}
-	for _, host := range hosts {
-		cloudName := host.GetCloudName()
-		cloudID := host.GetCloudID()
+	for _, node := range clusterNodes {
+		nodeConfig, err := app.LoadClusterNodeConfig(node)
+		if err != nil {
+			ux.Logger.RedXToUser("Failed to parse node %s due to %s", node, err.Error())
+			return err
+		}
 		//resize disk first
 		if diskSizeGB > 0 || diskType != "" {
-			if err := resizeDisk(cloudName, cloudID, diskSizeGB, diskType); err != nil {
+			if err := resizeDisk(nodeConfig.CloudService, nodeConfig.Region, nodeConfig.NodeID, diskSizeGB, diskType); err != nil {
 				return err
 			}
 		}
@@ -70,7 +73,7 @@ func resizeGCPDisk(cloudID string, diskSizeGB int, diskType string) error {
 	return nil
 }
 
-func resizeDisk(cloudName, cloudID string, diskSizeGB int, diskType string) error {
+func resizeDisk(cloudName, region, cloudID string, diskSizeGB int, diskType string) error {
 	if !checkDiskTypeSupported(cloudName, diskType) {
 		return fmt.Errorf("disk type %s is not supported for cloud %s", diskType, cloudName)
 	}

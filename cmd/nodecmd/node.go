@@ -54,5 +54,7 @@ rest of the commands to maintain your node and make your node a Subnet Validator
 	cmd.AddCommand(newWhitelistCmd())
 	// node refresh-ips
 	cmd.AddCommand(newRefreshIPsCmd())
+	// node resize
+	cmd.AddCommand(newResizeCmd())
 	return cmd
 }
