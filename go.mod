@@ -45,6 +45,14 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+replace github.com/ava-labs/avalanche-network-runner v1.7.6 => github.com/vtamara/avalanche-network-runner v1.7.7-0.20240318155026-05141d15f9a7
+
+replace github.com/ava-labs/avalanchego v1.11.0 => github.com/vtamara/avalanchego v1.11.1-0.20240318153306-71eb02dd6169
+
+replace github.com/ava-labs/coreth v0.13.0-rc.0 => github.com/vtamara/coreth v0.13.0-rc.0.0.20240318152249-fadb2d428cb2
+
+replace github.com/ava-labs/subnet-evm v0.6.0-fuji => github.com/vtamara/subnet-evm v0.6.0-fuji.0.20240318165355-82fe6ae68500
+
 require (
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -207,3 +215,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gotest.tools/v3 v3.3.0 // indirect
 )
+
+replace github.com/supranational/blst v0.3.11 => github.com/supranational/blst v0.3.12-0.20240316125559-704c7f6d5f99
+
+replace github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811 => github.com/vtamara/pebble v0.0.0-20240304195718-33499868d65e
