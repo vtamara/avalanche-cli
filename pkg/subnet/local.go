@@ -75,6 +75,9 @@ func NewLocalDeployer(
 	avagoBinaryPath string,
 	vmBin string,
 ) *LocalDeployer {
+	println("OJO avagoVersion: ", avagoVersion)
+	println("OJO avagoBinaryPath: ", avagoBinaryPath)
+	println("OJO vmBin: ", vmBin)
 	return &LocalDeployer{
 		procChecker:        binutils.NewProcessChecker(),
 		binChecker:         binutils.NewBinaryChecker(),
@@ -103,6 +106,7 @@ type DeployInfo struct {
 // * it checks the gRPC is running, if not, it starts it
 // * kicks off the actual deployment
 func (d *LocalDeployer) DeployToLocalNetwork(chain string, chainGenesis []byte, genesisPath string) (*DeployInfo, error) {
+	println("OJO chain", chain)
 	if err := d.StartServer(); err != nil {
 		return nil, err
 	}
@@ -332,12 +336,14 @@ func IssueAddPermissionlessDelegatorTx(
 }
 
 func (d *LocalDeployer) StartServer() error {
+	println("OJO StartServer")
 	isRunning, err := d.procChecker.IsServerProcessRunning(d.app)
 	if err != nil {
 		return fmt.Errorf("failed querying if server process is running: %w", err)
 	}
 	if !isRunning {
 		d.app.Log.Debug("gRPC server is not running")
+		//d.app.Log.Debug(d.app)
 		if err := binutils.StartServerProcess(d.app); err != nil {
 			return fmt.Errorf("failed starting gRPC server process: %w", err)
 		}
@@ -739,6 +745,7 @@ func (d *LocalDeployer) printExtraEvmInfo(chain string, chainGenesis []byte, tel
 func (d *LocalDeployer) SetupLocalEnv() (bool, string, error) {
 	avagoVersion := ""
 	avalancheGoBinPath := ""
+	d.avagoBinaryPath = "/home/vtamara/go/src/github.com/ava-labs/avalanchego/build/avalanchego"
 	if d.avagoBinaryPath != "" {
 		avalancheGoBinPath = d.avagoBinaryPath
 		// get avago version from binary
@@ -919,13 +926,22 @@ func getExpectedDefaultSnapshotSHA256Sum(isSingleNode bool, isPreCortina17 bool)
 // Initialize default snapshot with bootstrap snapshot archive
 // If force flag is set to true, overwrite the default snapshot if it exists
 func SetDefaultSnapshot(snapshotsDir string, resetCurrentSnapshot bool, avagoVersion string, isSingleNode bool) (bool, error) {
+	println("OJO subnt/local.SetDefaultSnapshot")
+	println("OJO snapshotsDir: ", snapshotsDir)
+	println("OJO resetCurrentSnapshot: ", resetCurrentSnapshot)
+	println("OJO avagoVersion: ", avagoVersion)
+	println("OJO isSingleNode: ", isSingleNode)
 	var isPreCortina17 bool
 	if avagoVersion != "" {
 		isPreCortina17 = semver.Compare(avagoVersion, constants.Cortina17Version) < 0
 	}
+	println("OJO isPreCortina17: ", isPreCortina17)
 	bootstrapSnapshotArchiveName, url, _, _ := getSnapshotLocs(isSingleNode, isPreCortina17)
+	println("OJO bootstrapSnapshotArchiveName: ", bootstrapSnapshotArchiveName)
 	currentBootstrapNamePath := filepath.Join(snapshotsDir, constants.CurrentBootstrapNamePath)
+	println("OJO currentBootstrapNamePath: ", currentBootstrapNamePath)
 	exists, err := storage.FileExists(currentBootstrapNamePath)
+	println("OJO exists: ", exists)
 	if err != nil {
 		return false, err
 	}
@@ -1011,6 +1027,7 @@ func (d *LocalDeployer) startNetwork(
 	avalancheGoBinPath string,
 	runDir string,
 ) error {
+	ux.Logger.PrintToUser("OJO 1.")
 	loadSnapshotOpts := []client.OpOption{
 		client.WithExecPath(avalancheGoBinPath),
 		client.WithRootDataDir(runDir),

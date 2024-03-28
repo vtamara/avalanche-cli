@@ -202,11 +202,18 @@ func GetServerPID(app *application.Avalanche) (int, error) {
 // it just executes `avalanche-cli backend start`
 func StartServerProcess(app *application.Avalanche) error {
 	thisBin := reexec.Self()
-
+	if (thisBin == "") {
+		thisBin = "./bin/avalanche"
+	}
+	println("thisBin: ", thisBin)
 	args := []string{constants.BackendCmd}
+	println("args[0]: ", args[0])
+	// out of range println("args[1]: ", args[1])
 	cmd := exec.Command(thisBin, args...)
+	//app.Log.Debug(cmd)
 
 	outputDirPrefix := path.Join(app.GetRunDir(), "server")
+	app.Log.Debug(outputDirPrefix)
 	outputDir, err := anrutils.MkDirWithTimestamp(outputDirPrefix)
 	if err != nil {
 		return err

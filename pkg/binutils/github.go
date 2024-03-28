@@ -13,6 +13,7 @@ const (
 	linux   = "linux"
 	darwin  = "darwin"
 	windows = "windows"
+	openbsd = "openbsd"
 
 	zipExtension = "zip"
 	tarExtension = "tar.gz"
@@ -67,6 +68,18 @@ func (avalancheGoDownloader) GetDownloadURL(version string, installer Installer)
 			version,
 		)
 		ext = zipExtension
+	case openbsd:
+		avalanchegoURL = fmt.Sprintf(
+			"https://github.com/%s/%s/releases/download/%s%s/avalanchego-openbsd-%s-%s%s.tar.gz",
+			constants.VtamaraRepo,
+			constants.AvalancheGoRepoName,
+			version,
+			constants.AdJSuffix,
+			goarch,
+			version,
+			constants.AdJSuffix,
+		)
+		ext = tarExtension
 		// EXPERIMENTAL WIN, no support
 	case windows:
 		avalanchegoURL = fmt.Sprintf(
@@ -116,6 +129,17 @@ func (subnetEVMDownloader) GetDownloadURL(version string, installer Installer) (
 			version[1:],
 			goarch,
 		)
+	case openbsd:
+		subnetEVMURL = fmt.Sprintf(
+			"https://github.com/%s/%s/releases/download/%s/%s_%s_openbsd_%s.tar.gz",
+			constants.VtamaraRepo,
+			constants.SubnetEVMRepoName,
+			version,
+			constants.SubnetEVMRepoName,
+			version[1:],
+			goarch,
+		)
+	
 	default:
 		return "", "", fmt.Errorf("OS not supported: %s", goos)
 	}

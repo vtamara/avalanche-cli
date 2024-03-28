@@ -192,6 +192,8 @@ const (
 	CustomVMDir                   = "vms"
 	GCPStaticIPPrefix             = "static-ip"
 	AvaLabsOrg                    = "ava-labs"
+	VtamaraRepo 									= "vtamara"
+	AdJSuffix                     = "adJ74"
 	AvalancheGoRepoName           = "avalanchego"
 	SubnetEVMRepoName             = "subnet-evm"
 	CliRepoName                   = "avalanche-cli"
