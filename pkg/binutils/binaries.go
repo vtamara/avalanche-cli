@@ -211,6 +211,8 @@ func (pbd *pluginBinaryDownloader) InstallVM(vmID, vmBin string) error {
 	// target of VM install
 	binaryPath := filepath.Join(pbd.app.GetPluginsDir(), vmID)
 
+	print("OJO pkg/binutils/binaries.go InstallVM vmID:", vmID, "vmBin:", vmBin)
+	println("binaryPath: ", binaryPath)
 	// check if binary is already present, this should never happen
 	if _, err := os.Stat(binaryPath); err == nil {
 		return errors.New("vm binary already exists, invariant broken")

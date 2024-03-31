@@ -75,9 +75,7 @@ func NewLocalDeployer(
 	avagoBinaryPath string,
 	vmBin string,
 ) *LocalDeployer {
-	println("OJO avagoVersion: ", avagoVersion)
-	println("OJO avagoBinaryPath: ", avagoBinaryPath)
-	println("OJO vmBin: ", vmBin)
+	println("OJO pkg/subnet/local.go NewLocalDeployer avagoVersion: ", avagoVersion, " avagoBinaryPath: ", avagoBinaryPath, " vmBin: ", vmBin)
 	return &LocalDeployer{
 		procChecker:        binutils.NewProcessChecker(),
 		binChecker:         binutils.NewBinaryChecker(),
@@ -106,7 +104,7 @@ type DeployInfo struct {
 // * it checks the gRPC is running, if not, it starts it
 // * kicks off the actual deployment
 func (d *LocalDeployer) DeployToLocalNetwork(chain string, chainGenesis []byte, genesisPath string) (*DeployInfo, error) {
-	println("OJO chain", chain)
+	println("OJO pkg/subnet/local.go DeployToLocalNetwork chain:", chain, " genesisPath:", genesisPath)
 	if err := d.StartServer(); err != nil {
 		return nil, err
 	}
@@ -336,7 +334,7 @@ func IssueAddPermissionlessDelegatorTx(
 }
 
 func (d *LocalDeployer) StartServer() error {
-	println("OJO StartServer")
+	println("OJO pkg/subnet/local.go StartServer")
 	isRunning, err := d.procChecker.IsServerProcessRunning(d.app)
 	if err != nil {
 		return fmt.Errorf("failed querying if server process is running: %w", err)
@@ -379,6 +377,7 @@ func (d *LocalDeployer) BackendStartedHere() bool {
 //   - waits completion of operation
 //   - show status
 func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath string) (*DeployInfo, error) {
+	println("OJO pkg/subnet/local.go doDeploy chain:", chain, " genesisPath:", genesisPath);
 	needsRestart, avalancheGoBinPath, err := d.SetupLocalEnv()
 	if err != nil {
 		return nil, err
@@ -402,6 +401,7 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 	ctx, cancel := utils.GetANRContext()
 	defer cancel()
 
+	println("OJO doDeploy antes de LoadSidecar")
 	// loading sidecar before it's needed so we catch any error early
 	sc, err := d.app.LoadSidecar(chain)
 	if err != nil {
@@ -426,6 +426,8 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 		return nil, fmt.Errorf("failed to create VM ID from %s: %w", chain, err)
 	}
 	d.app.Log.Debug("this VM will get ID", zap.String("vm-id", chainVMID.String()))
+	
+	println("OJO doDeploy antes de RelayerCleanup")
 
 	// cleanup if neeeded in the case relayer is registered to current blockchains
 	if err := teleporter.RelayerCleanup(
@@ -453,6 +455,7 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 		}
 	}
 
+	println("OJO doDeploy antes de NewStatusChecker")
 	// latest check for rpc compatibility
 	statusChecker := localnetworkinterface.NewStatusChecker()
 	_, avagoRPCVersion, _, err := statusChecker.GetCurrentNetworkVersion()
@@ -469,7 +472,8 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 			sc.RPCVersion,
 		)
 	}
-
+	
+	println("OJO doDeploy antes de WaitForHealty")
 	// get VM info
 	clusterInfo, err = WaitForHealthy(ctx, cli)
 	if err != nil {
@@ -516,6 +520,9 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 	if _, err := os.Stat(subnetConfigFile); err == nil {
 		subnetConfig = subnetConfigFile
 	}
+	
+	println("OJO doDeploy antes de installPlugin")
+	// get VM info
 
 	// install the plugin binary for the new VM
 	if err := d.installPlugin(chainVMID, d.vmBin); err != nil {
@@ -540,11 +547,13 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 			PerNodeChainConfig: perNodeChainConfig,
 		},
 	}
+	ux.Logger.PrintToUser("OJO en doDeploy antes de CreateBlockchains")
 	deployBlockchainsInfo, err := cli.CreateBlockchains(
 		ctx,
 		blockchainSpecs,
 	)
 	if err != nil {
+		println("OJO en doDeploy error en CreateBlockchains")
 		utils.FindErrorLogs(rootDir, backendLogDir)
 		pluginRemoveErr := d.removeInstalledPlugin(chainVMID)
 		if pluginRemoveErr != nil {
@@ -556,6 +565,7 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 
 	d.app.Log.Debug(deployBlockchainsInfo.String())
 
+	println("OJO doDeploy antes de WaitForHealthy 2")
 	clusterInfo, err = WaitForHealthy(ctx, cli)
 	if err != nil {
 		utils.FindErrorLogs(rootDir, backendLogDir)
@@ -568,6 +578,7 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 
 	endpoint := GetFirstEndpoint(clusterInfo, chain)
 	endpointRPCURL := endpoint[strings.LastIndex(endpoint, "http"):]
+	println("OJO doDeploy endpointRPCURL: ", endpointRPCURL )
 
 	var (
 		teleporterKeyAddress       string
@@ -590,6 +601,7 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 			return nil, err
 		}
 		privKeyStr := hex.EncodeToString(k.Raw())
+		println("OJO doDeploy antes de td.Deploy")
 		alreadyDeployed, cchainTeleporterMessengerAddress, cchainTeleporterRegistryAddress, err := td.Deploy(
 			d.app.GetTeleporterBinDir(),
 			sc.TeleporterVersion,
@@ -600,11 +612,13 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 		if err != nil {
 			return nil, err
 		}
+		println("OJO !alreadyDeployed")
 		if !alreadyDeployed {
 			subnetID, blockchainID, err := GetChainIDs(constants.LocalAPIEndpoint, "C-Chain")
 			if err != nil {
 				return nil, err
 			}
+			println("OJO UpdateRelayerConfig")
 			if err = teleporter.UpdateRelayerConfig(
 				d.app.GetAWMRelayerConfigPath(),
 				d.app.GetAWMRelayerStorageDir(),
@@ -618,6 +632,7 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 			); err != nil {
 				return nil, err
 			}
+			println("OJO FundRelayer")
 			if err := teleporter.FundRelayer(
 				network.CChainEndpoint(),
 				privKeyStr,
@@ -625,15 +640,19 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 			); err != nil {
 				return nil, err
 			}
+			println("OJO GetExtraLocalNetworkDataPath")
 			extraLocalNetworkDataPath := d.app.GetExtraLocalNetworkDataPath()
+			println("OJO ExtraLocalNetworkData")
 			extraLocalNetworkData := ExtraLocalNetworkData{
 				CChainTeleporterMessengerAddress: cchainTeleporterMessengerAddress,
 				CChainTTeleporterRegistryAddress: cchainTeleporterRegistryAddress,
 			}
+			println("OJO json.Marshal")
 			bs, err := json.Marshal(&extraLocalNetworkData)
 			if err != nil {
 				return nil, err
 			}
+			println("OJO WriteFile")
 			if err := os.WriteFile(extraLocalNetworkDataPath, bs, constants.WriteReadReadPerms); err != nil {
 				return nil, fmt.Errorf("could not extra local network data file to %s: %w", extraLocalNetworkDataPath, err)
 			}
@@ -646,16 +665,21 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 		if err != nil {
 			return nil, err
 		}
+		println("OJO doDeploy antes de k.C()")
 		teleporterKeyAddress = k.C()
+		println("OJO doDeploy antes de hex.EcnodeToString")
 		privKeyStr = hex.EncodeToString(k.Raw())
+		println("OJO doDeploy antes de Deploy")
 		_, teleporterMessengerAddress, teleporterRegistryAddress, err = td.Deploy(d.app.GetTeleporterBinDir(), sc.TeleporterVersion, chain, endpointRPCURL, privKeyStr)
 		if err != nil {
 			return nil, err
 		}
+		println("OJO antes de GetChainIDs");
 		subnetID, blockchainID, err := GetChainIDs(constants.LocalAPIEndpoint, chain)
 		if err != nil {
 			return nil, err
 		}
+		println("OJO antes de UpdateRelayerConfig");
 		if err = teleporter.UpdateRelayerConfig(
 			d.app.GetAWMRelayerConfigPath(),
 			d.app.GetAWMRelayerStorageDir(),
@@ -670,6 +694,7 @@ func (d *LocalDeployer) doDeploy(chain string, chainGenesis []byte, genesisPath 
 			return nil, err
 		}
 		ux.Logger.PrintToUser("")
+		println("OJO antes de FundRelayer");
 		// fund relayer on current blockchain
 		if err := teleporter.FundRelayer(endpointRPCURL, privKeyStr, relayerAddress); err != nil {
 			return nil, err
@@ -743,6 +768,7 @@ func (d *LocalDeployer) printExtraEvmInfo(chain string, chainGenesis []byte, tel
 // * if not, it downloads it and installs it (os - and archive dependent)
 // * returns the location of the avalanchego path
 func (d *LocalDeployer) SetupLocalEnv() (bool, string, error) {
+	println("OJO pkg/subnet/local.go SetupLocalEnv ");
 	avagoVersion := ""
 	avalancheGoBinPath := ""
 	d.avagoBinaryPath = "/home/vtamara/go/src/github.com/ava-labs/avalanchego/build/avalanchego"
@@ -926,11 +952,7 @@ func getExpectedDefaultSnapshotSHA256Sum(isSingleNode bool, isPreCortina17 bool)
 // Initialize default snapshot with bootstrap snapshot archive
 // If force flag is set to true, overwrite the default snapshot if it exists
 func SetDefaultSnapshot(snapshotsDir string, resetCurrentSnapshot bool, avagoVersion string, isSingleNode bool) (bool, error) {
-	println("OJO subnt/local.SetDefaultSnapshot")
-	println("OJO snapshotsDir: ", snapshotsDir)
-	println("OJO resetCurrentSnapshot: ", resetCurrentSnapshot)
-	println("OJO avagoVersion: ", avagoVersion)
-	println("OJO isSingleNode: ", isSingleNode)
+	println("OJO pkg/subnet/lcoal.go SetDefaultSnapshot snapshotsDir: ", snapshotsDir, "resetCurrentSnapshot: ", resetCurrentSnapshot, "avagoVersion: ", avagoVersion, "isSingleNode: ", isSingleNode)
 	var isPreCortina17 bool
 	if avagoVersion != "" {
 		isPreCortina17 = semver.Compare(avagoVersion, constants.Cortina17Version) < 0
@@ -1027,7 +1049,7 @@ func (d *LocalDeployer) startNetwork(
 	avalancheGoBinPath string,
 	runDir string,
 ) error {
-	ux.Logger.PrintToUser("OJO 1.")
+	ux.Logger.PrintToUser("OJO pkg/subnet/local.go startNetwork 1. avalancheGoBinPath=", avalancheGoBinPath, " runDir=", runDir)
 	loadSnapshotOpts := []client.OpOption{
 		client.WithExecPath(avalancheGoBinPath),
 		client.WithRootDataDir(runDir),

@@ -108,6 +108,7 @@ func (t *Deployer) Deploy(
 	rpcURL string,
 	prefundedPrivateKey string,
 ) (bool, string, string, error) {
+	println("OJO pkg/teleporter/teleporter.go Deploy, rpcURL:", rpcURL)
 	alreadyDeployed, messengerAddress, err := t.DeployMessenger(teleporterInstallDir, version, subnetName, rpcURL, prefundedPrivateKey)
 	if err != nil {
 		return false, "", "", err

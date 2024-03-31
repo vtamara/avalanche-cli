@@ -380,7 +380,9 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 			userProvidedAvagoVersion = avagoVersion
 		}
 
+		println("OJO cmd/subnetcmd/deploy.go deploySubnet 1")
 		deployer := subnet.NewLocalDeployer(app, userProvidedAvagoVersion, avagoBinaryPath, vmBin)
+		println("OJO cmd/subnetcmd/deploy.go deploySubnet 2")
 		deployInfo, err := deployer.DeployToLocalNetwork(chain, chainGenesis, genesisPath)
 		if err != nil {
 			if deployer.BackendStartedHere() {
@@ -390,6 +392,7 @@ func deploySubnet(cmd *cobra.Command, args []string) error {
 			}
 			return err
 		}
+		println("OJO cmd/subnetcmd/deploy.go deploySubnet 3")
 		flags := make(map[string]string)
 		flags[constants.Network] = network.Name()
 		metrics.HandleTracking(cmd, app, flags)
