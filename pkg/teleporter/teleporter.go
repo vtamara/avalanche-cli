@@ -113,12 +113,16 @@ func (t *Deployer) Deploy(
 	if err != nil {
 		return false, "", "", err
 	}
+	println("OJO pkg/teleporter/teleporter.go Deploy antes de if alreadyDeployed")
 	if alreadyDeployed {
 		return true, messengerAddress, "", nil
 	}
+	println("OJO pkg/teleporter/teleporter.go Deploy antes de DeployRegistry")
 	if registryAddress, err := t.DeployRegistry(teleporterInstallDir, version, subnetName, rpcURL, prefundedPrivateKey); err != nil {
+		println("OJO si");
 		return false, "", "", err
 	} else {
+		println("OJO no");
 		return false, messengerAddress, registryAddress, nil
 	}
 }
