@@ -231,3 +231,11 @@ require (
 	gotest.tools/v3 v3.5.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
+
+replace github.com/ava-labs/avalanchego v1.11.10 => github.com/vtamara/avalanchego v1.11.11-0.20240729141404-bf014f28402a
+
+replace github.com/ava-labs/coreth v0.13.7 => github.com/vtamara/coreth v0.13.8-0.20240729140257-9562eb5286e7
+
+replace github.com/ava-labs/subnet-evm v0.6.8 => github.com/vtamara/subnet-evm v0.6.9-0.20240731143317-12e5e65f08e5
+
+replace github.com/ava-labs/avalanche-network-runner v1.8.2 => github.com/vtamara/avalanche-network-runner v1.8.3-0.20240729154314-53be9bcd3f11
