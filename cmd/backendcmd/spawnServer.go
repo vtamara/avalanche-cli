@@ -35,7 +35,7 @@ func startBackend(_ *cobra.Command, _ []string) error {
 
 	serverCtx, serverCancel := context.WithCancel(context.Background())
 	errc := make(chan error)
-	fmt.Println("starting server")
+	fmt.Println("starting server OJO")
 	go binutils.WatchServerProcess(serverCancel, errc, app.Log)
 	errc <- s.Run(serverCtx)
 

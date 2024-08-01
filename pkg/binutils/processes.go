@@ -125,6 +125,7 @@ func NewGRPCServer(snapshotsDir string) (server.Server, error) {
 	if err != nil {
 		return nil, err
 	}
+  fmt.Println("OJO en NewGRPCServer")
 	return server.New(server.Config{
 		Port:                gRPCServerPort,
 		GwPort:              gRPCGatewayPort,
